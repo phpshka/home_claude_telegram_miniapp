@@ -658,28 +658,37 @@
   </div>
 
   <script>
+    // ==== Config ====
+    // API_DOMAIN — заменяется sed-ом при первом deploy на реальный DuckDNS subdomain
+    const API_DOMAIN = "API_DOMAIN_PLACEHOLDER";
+    const ZOZ_CHAT_ID = -5212912575;
+
     // ==== Telegram WebApp integration ====
     const tg = window.Telegram?.WebApp;
+    let initData = "";
+    let tgUser = null;
     if (tg) {
       tg.expand();
       tg.ready();
-
-      const user = tg.initDataUnsafe?.user;
-      // Force theme — editorial design lives in dark
+      initData = tg.initData || "";
+      tgUser = tg.initDataUnsafe?.user || null;
       try { tg.setHeaderColor("#0e1812"); } catch(e) {}
       try { tg.setBackgroundColor("#0e1812"); } catch(e) {}
 
       document.getElementById('tgInfo').textContent =
-        `${tg.platform || 'unknown'} · ${tg.colorScheme || 'dark'}${user?.first_name ? ' · ' + user.first_name : ''}`;
+        `${tg.platform || 'unknown'} · ${tg.colorScheme || 'dark'}${tgUser?.first_name ? ' · ' + tgUser.first_name : ''}`;
     }
 
-    // ==== Greeting word, depending on hour ====
-    const h = new Date().getHours();
-    document.getElementById('userName').textContent =
-      h < 6  ? 'Ночь' :
-      h < 12 ? 'Утро' :
-      h < 18 ? 'День' :
-               'Вечер';
+    // ==== Greeting word, depending on hour (МСК-relative) ====
+    function setGreeting() {
+      const h = new Date().getHours();
+      document.getElementById('userName').textContent =
+        h < 6  ? 'Ночь' :
+        h < 12 ? 'Утро' :
+        h < 18 ? 'День' :
+                 'Вечер';
+    }
+    setGreeting();
 
     // ==== Date — roman month ====
     const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
@@ -688,8 +697,7 @@
     document.getElementById('weekday').textContent = days[d.getDay()];
     document.getElementById('issueDate').textContent =
       `${String(d.getDate()).padStart(2,'0')}·${romanMonths[d.getMonth()]}·${d.getFullYear()}`;
-
-    // Issue number — days since project start (mock)
+    // Issue number — fallback на client side (API подменит точным значением)
     const start = new Date('2026-03-17');
     const dayN = Math.floor((d - start) / (1000*60*60*24)) + 1;
     document.getElementById('issueN').textContent = String(dayN).padStart(3,'0');
@@ -768,34 +776,198 @@
       svg.innerHTML = `${targetLine}${bars}<g class="chart-axis">${xLabels}</g>`;
     }
 
-    // ==== Mock data ====
-    const dayLabels = ['Чт','Пт','Сб','Вс','Пн','Вт','Ср'];
+    // ==== Mock fallback (используется если API недоступен) ====
+    const MOCK_DATA = {
+      user: { name: tgUser?.first_name || 'Санёк', agent: 'aleksandr' },
+      issue_n: dayN,
+      today: { sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28 },
+      week: {
+        sleep:    [7.25, 6.75, 7.5, 5.83, 8.0, 6.5, 6.5],
+        calories: [2100, 1950, 2300, 1700, 2000, 1850, 1850],
+        steps:    [8200, 7500, 9100, 4500, 11000, 6800, 5234],
+        labels:   ['Чт','Пт','Сб','Вс','Пн','Вт','Ср']
+      },
+      goals: [
+        { label: 'Снижение % жира: 28.3% → 20%' },
+        { label: 'Рост % мышц: 67.9% → 75%' },
+        { label: 'V-образная фигура' },
+        { label: 'Здоровая спина' }
+      ],
+      timeline: [
+        { time: '08:00', text: 'Утренняя сводка', status: 'done' },
+        { time: '08:10', text: 'Завтрак', status: 'done' },
+        { time: '12:30', text: 'Обед — что ел?', status: 'now' },
+        { time: '23:00', text: 'Нигепан', status: 'future' }
+      ],
+      weather: '+0…+5°C, небольшой снегопад, осадки 30%, ветер 2 м/с'
+    };
 
-    drawBarChart('sleepChart', [7.25, 6.75, 7.5, 5.83, 8.0, 6.5, 6.5], {
-      labels: dayLabels,
-      target: 8,
-      max: 9,
-      color: '#c8b274',
-      colorBelow: '#7a8c7d',
-      thresh: 7
-    });
+    // ==== Render helpers ====
+    function fmt(n) { return n == null ? '—' : new Intl.NumberFormat('ru-RU').format(n); }
+    function hhmm(h) {
+      if (h == null) return '—';
+      const hh = Math.floor(h);
+      const mm = Math.round((h - hh) * 60);
+      return `${hh}:${String(mm).padStart(2,'0')}`;
+    }
 
-    drawLineChart('calChart', [2100, 1950, 2300, 1700, 2000, 1850, 1850], {
-      labels: dayLabels,
-      target: 2200,
-      min: 1500,
-      max: 2400,
-      color: '#c8b274'
-    });
+    function renderHero(data) {
+      // userName уже выставлен в setGreeting()
+      if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
 
-    drawBarChart('stepsChart', [8200, 7500, 9100, 4500, 11000, 6800, 5234], {
-      labels: dayLabels,
-      target: 7000,
-      max: 12000,
-      color: '#c8b274',
-      colorBelow: '#c84d4d',
-      thresh: 7000
-    });
+      // Cards: подменим значения внутри `.hero-stat-num` (калории как hero), таблицу
+      const today = data.today || {};
+
+      // Hero — пока показываем «вчерашние шаги» как hero stat (калорий нет в Garmin)
+      const heroNum = document.getElementById('heroNum');
+      if (today.steps != null) {
+        heroNum.innerHTML = `${fmt(today.steps)}<sup>/7000 шагов</sup>`;
+        const pct = Math.min(100, Math.round((today.steps / 7000) * 100));
+        const meta = document.querySelector('.hero-stat-meta');
+        if (meta) meta.textContent = `${pct}% дневной нормы`;
+      }
+
+      // Stat-table — обновим строки
+      const rows = document.querySelectorAll('.stat-table .stat-row');
+      const map = [
+        { name: 'Сон', val: today.sleep_hours != null ? `${hhmm(today.sleep_hours)} <small>/ 8:00</small>` : '—' },
+        { name: 'Качество', val: today.sleep_quality != null ? `${today.sleep_quality} <small>/100</small>` : '—' },
+        { name: 'Шаги', val: today.steps != null ? `${fmt(today.steps)} <small>/7 000</small>` : '—' },
+        { name: 'Пульс покоя', val: today.resting_hr != null ? `${today.resting_hr} <small>уд/мин</small>` : '—' },
+        { name: 'Body Battery', val: today.body_battery ? `${today.body_battery[0]} <small>→</small> ${today.body_battery[1]}` : '—' },
+        { name: 'Стресс', val: today.stress != null ? `${today.stress} <small>/100</small>` : '—' }
+      ];
+      rows.forEach((r, i) => {
+        if (i < map.length) {
+          const numEl = r.querySelector('.stat-num');
+          if (numEl) numEl.innerHTML = map[i].val;
+        }
+      });
+
+      // Weather в meta-row
+      const metaSpans = document.querySelectorAll('.meta-row span');
+      if (metaSpans.length >= 2 && data.weather) {
+        metaSpans[1].textContent = `Москва · ${data.weather}`;
+        if (metaSpans[2]) metaSpans[2].textContent = '';
+      }
+
+      // Lede параграф — динамически из today
+      const lede = document.querySelector('.lede');
+      if (lede && today.sleep_hours != null) {
+        const sleepStr = hhmm(today.sleep_hours);
+        const isShort = today.sleep_hours < 7;
+        lede.innerHTML = `Сегодня ты спал <em>${sleepStr}</em>. ${isShort ? '<em>Это меньше, чем нужно.</em>' : 'Хорошо.'} Шаги: ${fmt(today.steps)}.`;
+      }
+    }
+
+    function renderCharts(week) {
+      if (!week) return;
+      const labels = week.labels || ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+      // Sleep bar chart — пропускаем null значения
+      const sleepData = (week.sleep || []).map(v => v ?? 0);
+      drawBarChart('sleepChart', sleepData, {
+        labels, target: 8, max: 9, color: '#c8b274', colorBelow: '#7a8c7d', thresh: 7
+      });
+
+      // Calories — line. Если все null → показываем плейсхолдер
+      const calData = (week.calories || []).map(v => v ?? 0);
+      const hasCal = calData.some(v => v > 0);
+      const calSvg = document.getElementById('calChart');
+      if (hasCal) {
+        drawLineChart('calChart', calData, {
+          labels, target: 2200, min: 1500, max: 2400, color: '#c8b274'
+        });
+      } else {
+        calSvg.innerHTML = `<text x="140" y="50" text-anchor="middle" fill="#7a8c7d" font-family="IBM Plex Mono" font-size="10" letter-spacing="0.1em">данные питания пока не структурированы</text>`;
+      }
+
+      // Steps
+      const stepsData = (week.steps || []).map(v => v ?? 0);
+      drawBarChart('stepsChart', stepsData, {
+        labels, target: 7000, max: Math.max(12000, ...stepsData) * 1.05, color: '#c8b274', colorBelow: '#c84d4d', thresh: 7000
+      });
+    }
+
+    function renderGoals(goals) {
+      const container = document.querySelector('.goal-list');
+      if (!container || !goals || !goals.length) return;
+      // Заменяем содержимое
+      container.innerHTML = goals.map(g => `
+        <div class="goal-item">
+          <span class="goal-cap">${escapeHtml(g.label)}</span>
+          <span class="goal-val">в работе</span>
+        </div>
+      `).join('');
+    }
+
+    function renderTimeline(timeline) {
+      const container = document.querySelector('.timeline');
+      if (!container || !timeline || !timeline.length) return;
+      container.innerHTML = timeline.map(t => `
+        <div class="tl-item ${t.status === 'done' ? 'done' : (t.status === 'now' ? 'now' : '')}">
+          <span class="tl-time">${escapeHtml(t.time)}</span>
+          <span class="tl-marker"></span>
+          <span class="tl-text">${escapeHtml(t.text)}</span>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function showError(msg) {
+      // Покажем баннер сверху
+      const issue = document.querySelector('.issue');
+      if (!issue) return;
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#c84d4d;color:#f5f0e6;padding:10px 22px;font-family:IBM Plex Mono,monospace;font-size:11px;letter-spacing:0.1em;text-align:center;';
+      banner.textContent = `⚠ ${msg} — показаны mock-данные`;
+      issue.insertBefore(banner, issue.firstChild);
+    }
+
+    // ==== Render ====
+    function renderAll(data) {
+      renderHero(data);
+      renderCharts(data.week);
+      renderGoals(data.goals);
+      renderTimeline(data.timeline);
+    }
+
+    // ==== Load real data from API or fallback to mock ====
+    async function loadData() {
+      // Если API_DOMAIN ещё placeholder (deploy не прошёл) — сразу mock
+      if (!API_DOMAIN || API_DOMAIN === 'API_DOMAIN_PLACEHOLDER') {
+        renderAll(MOCK_DATA);
+        return;
+      }
+      // Если нет initData (preview в десктопном браузере) — mock
+      if (!initData) {
+        renderAll(MOCK_DATA);
+        return;
+      }
+      try {
+        const url = `https://${API_DOMAIN}/api/dashboard?chat=${ZOZ_CHAT_ID}`;
+        const r = await fetch(url, {
+          headers: { 'X-Init-Data': initData },
+          cache: 'no-store'
+        });
+        if (!r.ok) {
+          showError(`API ${r.status}`);
+          renderAll(MOCK_DATA);
+          return;
+        }
+        const data = await r.json();
+        renderAll(data);
+      } catch (e) {
+        showError(`сеть недоступна: ${e.message}`);
+        renderAll(MOCK_DATA);
+      }
+    }
+
+    loadData();
   </script>
 </body>
 </html>
