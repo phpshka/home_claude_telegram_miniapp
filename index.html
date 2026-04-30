@@ -660,7 +660,7 @@
   <script>
     // ==== Config ====
     // API_DOMAIN — заменяется sed-ом при первом deploy на реальный DuckDNS subdomain
-    const API_DOMAIN = "API_DOMAIN_PLACEHOLDER";
+    const API_DOMAIN = "telegramminiapp.duckdns.org";
     const ZOZ_CHAT_ID = -5212912575;
 
     // ==== Telegram WebApp integration ====
@@ -939,7 +939,7 @@
     // ==== Load real data from API or fallback to mock ====
     async function loadData() {
       // Если API_DOMAIN ещё placeholder (deploy не прошёл) — сразу mock
-      if (!API_DOMAIN || API_DOMAIN === 'API_DOMAIN_PLACEHOLDER') {
+      if (!API_DOMAIN || API_DOMAIN === 'telegramminiapp.duckdns.org') {
         renderAll(MOCK_DATA);
         return;
       }
