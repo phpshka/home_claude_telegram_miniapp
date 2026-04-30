@@ -327,6 +327,8 @@
     .stat-card.bb       .stat-card-value { color: var(--indigo); }
     .stat-card.stress   .stat-card-icon { background: rgba(192, 132, 252, 0.12); color: var(--violet); }
     .stat-card.stress   .stat-card-value { color: var(--violet); }
+    .stat-card.kcal     .stat-card-icon { background: rgba(251, 191, 36, 0.12); color: var(--amber); }
+    .stat-card.kcal     .stat-card-value { color: var(--amber); }
 
     /* ============ CHARTS ============ */
     .chart-card {
@@ -614,6 +616,11 @@
           <div class="stat-card-value" id="cardStress">…</div>
           <div class="stat-card-sub">средний / 100</div>
         </div>
+        <div class="stat-card kcal" style="grid-column: 1 / -1;">
+          <div class="stat-card-head"><span class="stat-card-icon">🍽</span><span class="stat-card-name">Калории сегодня</span></div>
+          <div class="stat-card-value" id="cardKcal">…</div>
+          <div class="stat-card-sub" id="cardKcalSub">белок · жиры · углеводы</div>
+        </div>
       </div>
     </section>
 
@@ -644,10 +651,10 @@
       <div class="chart-card">
         <div class="chart-head">
           <span class="chart-name">Калории</span>
-          <span class="chart-meta" id="calMeta">в работе</span>
+          <span class="chart-meta" id="calMeta">…</span>
         </div>
-        <div class="chart-explain">Питание пока не сохраняется структурно — это отдельная задача.</div>
-        <div class="chart-wrap"><div class="chart-empty">📋 Скоро будет<small>Структурный трекинг питания через бота — следующий этап</small></div></div>
+        <div class="chart-explain">Сколько съел каждый день. Пунктир — цель 2200 ккал.</div>
+        <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="calChart"></svg><div id="calEmpty" style="display:none;" class="chart-empty">🍽 Записей нет<small>Расскажи боту что ел — появится график</small></div></div>
       </div>
     </section>
 
@@ -747,10 +754,13 @@
     const MOCK_DATA = {
       user: { name: tgUser?.first_name || 'Санёк' },
       issue_n: dayN,
-      today: { sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28 },
+      today: {
+        sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28,
+        calories: { eaten: 1855, goal: 2200, protein: 152, fat: 53, carbs: 161, meals_count: 4 }
+      },
       week: {
         sleep:    [7.25, 6.75, 7.5, 5.83, 8.0, 6.5, 6.5],
-        calories: [null,null,null,null,null,null,null],
+        calories: [2100, 1950, 2300, 1700, 2000, 1850, 1855],
         steps:    [8200, 7500, 9100, 4500, 11000, 6800, 5234],
         labels:   ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
       },
@@ -819,6 +829,19 @@
         set('cardBb', null);
       }
       set('cardStress', today.stress != null ? today.stress : null);
+
+      // Калории — отдельная карточка
+      const kcal = today.calories;
+      if (kcal && kcal.eaten != null) {
+        if (kcal.eaten > 0) {
+          set('cardKcal', `${fmt(kcal.eaten)}<small> / ${kcal.goal} ккал</small>`);
+          const sub = `Б ${kcal.protein}г · Ж ${kcal.fat}г · У ${kcal.carbs}г · ${kcal.meals_count} приём${kcal.meals_count===1?'':kcal.meals_count<5?'а':'ов'}`;
+          document.getElementById('cardKcalSub').textContent = sub;
+        } else {
+          set('cardKcal', '<small style="font-size:13px;color:var(--fg-mute);">записей нет</small>');
+          document.getElementById('cardKcalSub').textContent = 'расскажи боту что ел';
+        }
+      }
     }
 
     function renderWeather(w) {
@@ -926,14 +949,55 @@
       svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
     }
 
+    function drawCaloriesChart(data, labels) {
+      const svg = document.getElementById('calChart');
+      const empty = document.getElementById('calEmpty');
+      const realData = data.filter(v => v != null && v > 0);
+      if (realData.length === 0) {
+        // Нет ни одной записи — показываем empty state
+        if (empty) empty.style.display = '';
+        if (svg) svg.style.display = 'none';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+      if (svg) svg.style.display = '';
+
+      const W = 320, H = 110, padL = 4, padR = 4, padT = 8, padB = 22;
+      const dw = W - padL - padR, dh = H - padT - padB;
+      const max = Math.max(2400, ...realData);
+      const bw = dw / data.length * 0.6;
+      const gap = dw / data.length;
+
+      const bars = data.map((v, i) => {
+        if (v == null) return '';
+        const x = padL + i * gap + (gap - bw) / 2;
+        const h = (v / max) * dh;
+        const y = padT + dh - h;
+        const fill = v <= 2200 ? 'var(--amber)' : 'var(--coral)';
+        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+      }).join('');
+
+      const ty = padT + dh - (2200 / max) * dh;
+      const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
+
+      const xLabels = labels.map((l, i) => {
+        const x = padL + i * gap + gap / 2;
+        return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
+      }).join('');
+
+      svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+    }
+
     function renderWeek(week) {
-      week = week || { sleep: [], steps: [], labels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] };
+      week = week || { sleep: [], steps: [], calories: [], labels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] };
       const labels = week.labels || ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
       const sleepData = (week.sleep || []).map(v => v ?? 0);
       const stepsData = week.steps || [];
+      const calData = week.calories || [];
 
       drawSleepChart(sleepData, labels);
       drawStepsChart(stepsData, labels);
+      drawCaloriesChart(calData, labels);
 
       // Avg sleep
       const validSleep = (week.sleep || []).filter(v => v != null && v > 0);
@@ -944,6 +1008,15 @@
       const validSteps = stepsData.filter(v => v != null);
       const hits = validSteps.filter(v => v >= 7000).length;
       document.getElementById('stepsHit').textContent = `${hits} из 7 дней`;
+
+      // Calories meta — среднее за дни с записями
+      const validCal = calData.filter(v => v != null && v > 0);
+      if (validCal.length) {
+        const avgCal = Math.round(validCal.reduce((a,b)=>a+b,0) / validCal.length);
+        document.getElementById('calMeta').innerHTML = `среднее <b>${fmt(avgCal)}</b> ккал`;
+      } else {
+        document.getElementById('calMeta').textContent = 'записей пока нет';
+      }
     }
 
     function renderAll(data) {
