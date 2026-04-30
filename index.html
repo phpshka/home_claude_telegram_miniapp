@@ -3,666 +3,682 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>ЗОЖ • Выпуск</title>
+  <title>ЗОЖ • Дашборд</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Display: Bricolage Grotesque (variable, distinctive). Body: Manrope. Mono: JetBrains Mono. -->
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    /* ============ RESET ============ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 
-    /* ============ THEME ============ */
+    /* ============ THEME — deep navy + electric ============ */
     :root {
-      /* paper-on-forest editorial palette */
-      --bg:        #0e1812;
-      --paper:     #f5f0e6;   /* cream / aged paper */
-      --paper-dim: #ddd5c4;
-      --ink:       #1a1410;   /* warm near-black */
-      --gold:      #c8b274;   /* muted brass */
-      --gold-deep: #8a7338;
-      --sage:      #7a8c7d;
-      --sage-deep: #54655a;
-      --red:       #c84d4d;
-      --rule:      rgba(245, 240, 230, 0.14);
-      --rule-strong: rgba(245, 240, 230, 0.32);
-      --grain-opacity: 0.04;
+      --bg-0:      #0a0e1a;          /* deepest navy */
+      --bg-1:      #131a2c;          /* card surface */
+      --bg-2:      #1c243a;          /* card hover/elevated */
+      --fg:        #f5f7ff;
+      --fg-dim:    #a8b1c8;
+      --fg-mute:   #6b7488;
+      --line:      rgba(255, 255, 255, 0.06);
+      --line-2:    rgba(255, 255, 255, 0.12);
+
+      /* Accents — per metric */
+      --cyan:      #22d3ee;          /* Sleep */
+      --indigo:    #818cf8;          /* HR, Body Battery */
+      --amber:     #fbbf24;          /* Steps, achievement */
+      --coral:     #fb7185;          /* Alert / now */
+      --emerald:   #34d399;          /* Goal hit */
+      --violet:    #c084fc;          /* Stress */
+
+      --shadow:    0 8px 24px rgba(0, 0, 0, 0.3);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
-    /* ============ BASE ============ */
     body {
-      font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-      font-weight: 400;
-      font-size: 15px;
-      line-height: 1.45;
-      color: var(--paper);
-      background: var(--bg);
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--fg);
+      background: var(--bg-0);
       min-height: 100vh;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
       -webkit-font-smoothing: antialiased;
-      text-rendering: geometricPrecision;
       overflow-x: hidden;
       position: relative;
     }
 
-    /* paper grain texture overlay */
+    /* Атмосферная подложка — диагональный градиент + radial pulse */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
+      background:
+        radial-gradient(ellipse at 0% 0%, rgba(34, 211, 238, 0.12) 0%, transparent 40%),
+        radial-gradient(ellipse at 100% 100%, rgba(192, 132, 252, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 30%, rgba(129, 140, 248, 0.06) 0%, transparent 50%);
       pointer-events: none;
-      opacity: var(--grain-opacity);
-      z-index: 99;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      mix-blend-mode: screen;
+      z-index: -1;
     }
 
-    /* ============ LAYOUT ============ */
-    .issue {
+    .app {
       max-width: 480px;
       margin: 0 auto;
-      padding-bottom: 64px;
+      padding: 20px 16px 40px;
     }
 
     /* ============ MASTHEAD ============ */
     .masthead {
-      padding: 24px 22px 28px;
-      border-bottom: 1px solid var(--rule-strong);
-      position: relative;
+      margin-bottom: 24px;
+      animation: fadeUp 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
-    .nameplate {
+    .issue-meta {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
-      font-family: "IBM Plex Mono", monospace;
+      font-family: "JetBrains Mono", monospace;
       font-size: 10px;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.18em;
+      color: var(--fg-mute);
       text-transform: uppercase;
-      color: var(--paper-dim);
-      margin-bottom: 22px;
-    }
-    .nameplate .lhs { color: var(--gold); }
-    .nameplate .rhs { font-variant-numeric: tabular-nums; }
-
-    .title {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 144, "wght" 600, "SOFT" 80;
-      font-size: clamp(56px, 16vw, 84px);
-      line-height: 0.86;
-      letter-spacing: -0.04em;
-      color: var(--paper);
-      margin-bottom: 14px;
-      animation: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    .title em {
-      font-style: italic;
-      font-variation-settings: "opsz" 144, "wght" 400, "SOFT" 100;
-      color: var(--gold);
-    }
-
-    .lede {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 14, "wght" 350;
-      font-size: 17px;
-      line-height: 1.45;
-      color: var(--paper-dim);
-      max-width: 32ch;
       margin-bottom: 18px;
-      animation: rise 700ms 100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .issue-meta .lhs { color: var(--cyan); }
+
+    .greeting {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-variation-settings: "opsz" 96, "wght" 700;
+      font-size: clamp(40px, 11vw, 56px);
+      line-height: 0.96;
+      letter-spacing: -0.03em;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+    .greeting .accent {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--indigo) 50%, var(--violet) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .lede {
+      font-size: 14px;
+      color: var(--fg-dim);
+      margin-bottom: 18px;
+      line-height: 1.5;
+      max-width: 38ch;
     }
     .lede em {
-      font-style: italic;
-      color: var(--gold);
+      color: var(--coral);
+      font-style: normal;
+      font-weight: 600;
     }
 
-    .meta-row {
+    /* ============ WEATHER CARD ============ */
+    .weather-card {
+      background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      border: 1px solid var(--line-2);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      animation: fadeUp 700ms 100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .weather-icon {
+      font-size: 44px;
+      line-height: 1;
+      width: 56px;
+      text-align: center;
+    }
+    .weather-meta {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px 16px;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 10.5px;
-      letter-spacing: 0.06em;
-      color: var(--paper-dim);
+      flex-direction: column;
+      gap: 2px;
+    }
+    .weather-day {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--cyan);
       text-transform: uppercase;
-      animation: rise 700ms 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-      max-width: 100%;
     }
-    .meta-row span#weatherSpan {
-      flex: 1 1 100%;
-      line-height: 1.5;
+    .weather-temp {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-variation-settings: "opsz" 32, "wght" 700;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
     }
-    .meta-row span { display: inline-flex; align-items: center; gap: 6px; }
-    .meta-row .dot { width: 4px; height: 4px; background: var(--gold); border-radius: 50%; display: inline-block; }
+    .weather-cond {
+      font-size: 13px;
+      color: var(--fg-dim);
+    }
+    .weather-rec {
+      font-size: 12px;
+      color: var(--amber);
+      font-weight: 600;
+      margin-top: 4px;
+    }
 
-    /* ============ SPREAD ============ */
-    .spread {
-      padding: 32px 22px 0;
-      animation: rise 800ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
+    /* ============ SECTION ============ */
+    .section { margin-bottom: 28px; }
+    .section.delayed-1 { animation: fadeUp 700ms 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .section.delayed-2 { animation: fadeUp 700ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .section.delayed-3 { animation: fadeUp 700ms 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .section.delayed-4 { animation: fadeUp 700ms 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-    .spread-label {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 10px;
-      letter-spacing: 0.3em;
-      color: var(--gold);
+    .section-title {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: var(--fg-dim);
       text-transform: uppercase;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
-    .spread-label::after {
+    .section-title::before {
       content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--rule);
+      width: 16px;
+      height: 2px;
+      background: var(--cyan);
+      border-radius: 2px;
     }
+    .section-title.t-purple::before { background: var(--violet); }
+    .section-title.t-amber::before { background: var(--amber); }
+    .section-title.t-coral::before { background: var(--coral); }
+    .section-title.t-emerald::before { background: var(--emerald); }
 
-    /* ---- HERO STAT ---- */
+    /* ============ HERO STAT (steps as #1) ============ */
     .hero-stat {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: end;
-      gap: 18px;
-      padding-bottom: 26px;
-      border-bottom: 1px solid var(--rule);
+      background: linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      border: 1px solid var(--line-2);
+      border-radius: 24px;
+      padding: 22px 22px 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-stat::after {
+      content: "";
+      position: absolute;
+      top: 0; right: 0;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle at center, rgba(251, 191, 36, 0.18) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-stat-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--fg-mute);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      position: relative;
     }
     .hero-stat-num {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 144, "wght" 700;
-      font-size: clamp(82px, 26vw, 132px);
-      line-height: 0.82;
-      letter-spacing: -0.05em;
-      color: var(--gold);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-variation-settings: "opsz" 96, "wght" 800;
+      font-size: clamp(64px, 18vw, 92px);
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      color: var(--amber);
       font-variant-numeric: lining-nums;
+      position: relative;
     }
-    .hero-stat-num sup {
-      font-size: 0.32em;
-      vertical-align: top;
-      letter-spacing: 0;
-      color: var(--paper-dim);
-      font-variation-settings: "wght" 400;
+    .hero-stat-goal {
+      font-size: 14px;
+      color: var(--fg-mute);
+      font-family: "JetBrains Mono", monospace;
+    }
+    .hero-stat-progress {
+      margin-top: 14px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero-stat-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--amber), var(--coral));
+      border-radius: 2px;
+      width: var(--pct, 0%);
+      transition: width 1.2s 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
     .hero-stat-meta {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--paper-dim);
-      text-align: right;
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      padding: 0 4px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--fg-dim);
+      display: flex;
+      justify-content: space-between;
     }
-    .hero-stat-cap {
-      grid-column: 1 / -1;
-      padding-top: 8px;
-      font-family: "Fraunces", serif;
-      font-style: italic;
-      font-variation-settings: "opsz" 14, "wght" 400;
-      color: var(--paper-dim);
-      font-size: 14px;
-    }
-    .hero-stat-cap b {
-      color: var(--paper);
-      font-style: normal;
-      font-variation-settings: "wght" 600;
-    }
+    .hero-stat-meta b { color: var(--fg); font-weight: 700; }
 
-    /* ---- STAT TABLE (asymmetric) ---- */
-    .stat-table {
-      padding: 22px 0 8px;
-    }
-    .stat-row {
+    /* ============ STAT CARDS GRID ============ */
+    .stat-grid {
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: baseline;
-      padding: 14px 0;
-      border-bottom: 1px dashed var(--rule);
-      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-name {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 14, "wght" 450;
-      font-style: italic;
-      font-size: 17px;
-      color: var(--paper);
+    .stat-card {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      transition: transform 0.2s, border-color 0.2s;
     }
-    .stat-leader {
-      font-family: "IBM Plex Mono", monospace;
-      letter-spacing: 0.4em;
-      color: var(--rule-strong);
-      overflow: hidden;
-      text-align: center;
-      align-self: center;
-      letter-spacing: 0.5em;
+    .stat-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+    .stat-card-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
     }
-    .stat-num {
-      font-family: "IBM Plex Mono", monospace;
+    .stat-card-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .stat-card-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+    }
+    .stat-card-value {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-variation-settings: "opsz" 32, "wght" 700;
+      font-size: 26px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .stat-card-value small {
+      font-size: 13px;
       font-weight: 500;
-      font-size: 15px;
-      color: var(--gold);
-      font-variant-numeric: tabular-nums;
-      text-align: right;
+      color: var(--fg-mute);
+      margin-left: 2px;
+      letter-spacing: 0;
     }
-    .stat-num small {
-      color: var(--paper-dim);
-      font-weight: 400;
+    .stat-card-sub {
+      font-size: 11px;
+      color: var(--fg-mute);
+      line-height: 1.4;
     }
 
-    /* ---- CHARTS — custom SVG ---- */
-    .chart-block {
-      padding: 22px 0;
-      border-bottom: 1px solid var(--rule);
+    /* per-metric accents */
+    .stat-card.sleep    .stat-card-icon { background: rgba(34, 211, 238, 0.12); color: var(--cyan); }
+    .stat-card.sleep    .stat-card-value { color: var(--cyan); }
+    .stat-card.quality  .stat-card-icon { background: rgba(34, 211, 238, 0.12); color: var(--cyan); }
+    .stat-card.quality  .stat-card-value { color: var(--cyan); }
+    .stat-card.hr       .stat-card-icon { background: rgba(251, 113, 133, 0.12); color: var(--coral); }
+    .stat-card.hr       .stat-card-value { color: var(--coral); }
+    .stat-card.bb       .stat-card-icon { background: rgba(129, 140, 248, 0.12); color: var(--indigo); }
+    .stat-card.bb       .stat-card-value { color: var(--indigo); }
+    .stat-card.stress   .stat-card-icon { background: rgba(192, 132, 252, 0.12); color: var(--violet); }
+    .stat-card.stress   .stat-card-value { color: var(--violet); }
+
+    /* ============ CHARTS ============ */
+    .chart-card {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
     }
-    .chart-block:last-child { border-bottom: none; }
+    .chart-card + .chart-card { margin-top: 10px; }
     .chart-head {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      margin-bottom: 14px;
+      margin-bottom: 4px;
     }
     .chart-name {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 14, "wght" 600;
-      font-size: 16px;
-      letter-spacing: -0.01em;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--fg);
     }
     .chart-meta {
-      font-family: "IBM Plex Mono", monospace;
+      font-family: "JetBrains Mono", monospace;
       font-size: 10px;
-      letter-spacing: 0.15em;
-      color: var(--paper-dim);
-      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--fg-mute);
     }
-    .chart-meta b { color: var(--gold); font-weight: 500; }
-    .chart-meta b.down { color: var(--red); }
-
-    .chart-svg {
+    .chart-meta b { color: var(--cyan); font-weight: 700; }
+    .chart-meta b.amber { color: var(--amber); }
+    .chart-explain {
+      font-size: 11px;
+      color: var(--fg-mute);
+      margin-bottom: 10px;
+    }
+    .chart-wrap {
       width: 100%;
-      display: block;
-      overflow: visible;
+      height: 110px;
+      position: relative;
     }
+    .chart-svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .chart-axis text {
-      font-family: "IBM Plex Mono", monospace;
+      font-family: "JetBrains Mono", monospace;
       font-size: 9px;
-      fill: var(--paper-dim);
-      letter-spacing: 0.1em;
+      fill: var(--fg-mute);
+      letter-spacing: 0.04em;
     }
-    .chart-line { fill: none; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
-    .chart-fill { opacity: 0.12; }
-    .chart-target { stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
-    .chart-bar { transition: opacity 0.3s; }
-    .chart-bar.below { opacity: 0.5; }
-    .chart-dot {
-      fill: var(--gold);
-      r: 0;
-      animation: dotpop 400ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
+    .chart-target { stroke: rgba(255,255,255,0.18); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
     .chart-line {
+      fill: none;
+      stroke-width: 2;
+      stroke-linejoin: round;
+      stroke-linecap: round;
       stroke-dasharray: var(--len, 1000);
       stroke-dashoffset: var(--len, 1000);
       animation: drawline 1400ms 100ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
+    .chart-fill { opacity: 0.18; }
+    .chart-dot { fill: var(--cyan); r: 0; animation: dotpop 400ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
     @keyframes drawline { to { stroke-dashoffset: 0; } }
-    @keyframes dotpop { to { r: 3.2; } }
+    @keyframes dotpop { to { r: 3; } }
     .bar-rect {
       transform-origin: bottom;
       transform: scaleY(0);
       animation: bargrow 700ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      rx: 2;
     }
     @keyframes bargrow { to { transform: scaleY(1); } }
-
-    /* ---- GOALS ---- */
-    .goal-list { padding: 8px 0; }
-    .goal-item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px 16px;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--rule);
+    .chart-empty {
+      font-size: 13px;
+      color: var(--fg-mute);
+      text-align: center;
+      padding: 20px 0;
     }
-    .goal-item:last-child { border-bottom: none; }
-    .goal-cap {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 14, "wght" 500;
-      font-style: italic;
-      font-size: 16px;
-      letter-spacing: -0.005em;
-    }
-    .goal-val {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      color: var(--gold);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.05em;
-      text-align: right;
-    }
-    .goal-val small { color: var(--paper-dim); }
-    .goal-track {
-      grid-column: 1 / -1;
-      height: 1px;
-      background: var(--rule-strong);
-      position: relative;
+    .chart-empty small {
+      display: block;
+      font-size: 11px;
       margin-top: 4px;
     }
-    .goal-track::before {
-      content: "";
-      position: absolute;
-      left: 0; top: -1px;
-      height: 3px;
-      background: var(--gold);
-      width: var(--pct, 0%);
-      transition: width 1.2s 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .goal-track.full::before { background: linear-gradient(90deg, var(--gold) 0%, var(--sage) 100%); }
-    .training-marks {
-      grid-column: 1 / -1;
+
+    /* ============ GOALS ============ */
+    .goals { display: flex; flex-direction: column; gap: 8px; }
+    .goal {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
       display: flex;
-      gap: 4px;
-      margin-top: 8px;
-      font-family: "IBM Plex Mono", monospace;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .goal:hover { border-color: var(--line-2); }
+    .goal-text { color: var(--fg); flex: 1; }
+    .goal-tag {
+      font-family: "JetBrains Mono", monospace;
       font-size: 10px;
-      letter-spacing: 0.1em;
-      color: var(--paper-dim);
-    }
-    .training-marks .day {
-      flex: 1;
-      text-align: center;
-      padding: 6px 0;
-      border: 1px solid var(--rule);
-    }
-    .training-marks .day.done {
-      background: var(--gold);
-      color: var(--ink);
-      border-color: var(--gold);
       font-weight: 600;
-    }
-    .training-marks .day.today {
-      border-color: var(--gold);
-      color: var(--gold);
+      letter-spacing: 0.08em;
+      color: var(--emerald);
+      background: rgba(52, 211, 153, 0.12);
+      padding: 4px 10px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      flex-shrink: 0;
     }
 
-    /* ---- TIMELINE ---- */
-    .timeline {
-      position: relative;
-      padding: 8px 0 0 0;
-      margin-left: 2px;
-    }
-    .timeline::before {
-      content: "";
-      position: absolute;
-      left: 36px;
-      top: 8px;
-      bottom: 8px;
-      width: 1px;
-      background: var(--rule-strong);
-    }
+    /* ============ TIMELINE — checkboxes ============ */
+    .timeline { display: flex; flex-direction: column; gap: 4px; }
     .tl-item {
       display: grid;
-      grid-template-columns: 56px 12px 1fr;
-      align-items: baseline;
-      gap: 10px;
-      padding: 10px 0;
-      position: relative;
+      grid-template-columns: 60px 26px 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      transition: border-color 0.2s, background 0.2s;
     }
+    .tl-item:hover { border-color: var(--line-2); }
     .tl-time {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      color: var(--paper-dim);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-mute);
       font-variant-numeric: tabular-nums;
-      letter-spacing: 0.06em;
     }
-    .tl-marker {
-      width: 8px; height: 8px;
-      margin-left: 2px;
-      margin-top: 6px;
-      border-radius: 50%;
-      background: var(--bg);
-      border: 1px solid var(--paper-dim);
+    .tl-checkbox {
+      width: 22px; height: 22px;
+      border-radius: 7px;
+      border: 1.5px solid var(--line-2);
+      background: transparent;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all 0.2s;
     }
     .tl-text {
-      font-family: "Fraunces", serif;
-      font-variation-settings: "opsz" 14, "wght" 400;
-      font-size: 16px;
-      color: var(--paper);
+      font-size: 14px;
+      color: var(--fg);
+      line-height: 1.35;
     }
-    .tl-item.done .tl-marker {
-      background: var(--gold);
-      border-color: var(--gold);
+    .tl-item.done .tl-checkbox {
+      background: var(--emerald);
+      border-color: var(--emerald);
+      color: #052e16;
     }
-    .tl-item.done .tl-time { color: var(--paper-dim); }
-    .tl-item.done .tl-text { color: var(--paper-dim); text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: var(--rule-strong); }
-    .tl-item.now .tl-marker {
-      background: var(--red);
-      border-color: var(--red);
-      box-shadow: 0 0 0 6px rgba(200, 77, 77, 0.18);
-      animation: heartbeat 1.4s ease-in-out infinite;
+    .tl-item.done .tl-checkbox::before { content: "✓"; }
+    .tl-item.done .tl-time { color: var(--fg-mute); }
+    .tl-item.done .tl-text { color: var(--fg-dim); }
+
+    .tl-item.now {
+      background: linear-gradient(135deg, rgba(251, 113, 133, 0.12), rgba(251, 113, 133, 0.04));
+      border-color: var(--coral);
     }
-    .tl-item.now .tl-time { color: var(--red); font-weight: 500; }
-    .tl-item.now .tl-text { color: var(--paper); font-weight: 500; }
-    @keyframes heartbeat {
-      0%, 100% { box-shadow: 0 0 0 6px rgba(200, 77, 77, 0.18); }
-      50%      { box-shadow: 0 0 0 10px rgba(200, 77, 77, 0); }
+    .tl-item.now .tl-checkbox {
+      border-color: var(--coral);
+      background: rgba(251, 113, 133, 0.15);
+    }
+    .tl-item.now .tl-checkbox::before {
+      content: "";
+      width: 8px; height: 8px;
+      background: var(--coral);
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .tl-item.now .tl-time { color: var(--coral); }
+    .tl-item.now .tl-text { color: var(--fg); font-weight: 600; }
+
+    .tl-item.future .tl-checkbox::before { content: "○"; color: var(--fg-mute); font-size: 14px; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.4); opacity: 0.6; }
     }
 
-    /* ============ COLOPHON ============ */
-    .colophon {
-      margin-top: 48px;
-      padding: 24px 22px 0;
-      border-top: 1px solid var(--rule-strong);
-      font-family: "IBM Plex Mono", monospace;
+    /* ============ FOOTER ============ */
+    .footer {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
       font-size: 9px;
       letter-spacing: 0.18em;
-      color: var(--paper-dim);
+      color: var(--fg-mute);
       text-transform: uppercase;
-      text-align: center;
-      line-height: 2;
     }
-    .colophon .ornament {
-      color: var(--gold);
-      font-family: "Fraunces", serif;
-      font-size: 18px;
-      letter-spacing: 0.3em;
-      margin-bottom: 12px;
-      font-style: italic;
+    .footer .ornament {
+      color: var(--cyan);
+      font-size: 14px;
+      margin-bottom: 8px;
+      letter-spacing: 0.4em;
     }
-    .colophon .small { font-size: 8px; opacity: 0.7; margin-top: 6px; }
 
-    /* ============ ANIM UTILS ============ */
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(10px); }
+    /* ============ ERROR BANNER ============ */
+    .error-banner {
+      background: var(--coral);
+      color: #1a0a0a;
+      padding: 10px 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
-    /* Section reveal stagger */
-    .spread { animation-delay: 280ms; }
-    .spread.delayed-2 { animation-delay: 360ms; }
-    .spread.delayed-3 { animation-delay: 440ms; }
-    .spread.delayed-4 { animation-delay: 520ms; }
-    .spread.delayed-5 { animation-delay: 600ms; }
   </style>
 </head>
 <body>
-  <div class="issue">
+  <div class="app">
 
     <!-- ============ MASTHEAD ============ -->
     <header class="masthead">
-      <div class="nameplate">
+      <div class="issue-meta">
         <span class="lhs">— ВЫПУСК <span id="issueN">001</span> —</span>
-        <span class="rhs" id="issueDate">30·IV·2026</span>
+        <span id="issueDate">30·IV·2026</span>
       </div>
-
-      <h1 class="title">
-        Доброе<br/>
-        <em id="userName">Утро</em>,<br/>
-        Санёк.
+      <h1 class="greeting">
+        <span id="greetWord">Добрый</span> <span class="accent" id="greetTime">вечер</span>,<br/>
+        <span id="userName">Санёк</span>.
       </h1>
-
-      <p class="lede" id="lede">Загрузка…</p>
-
-      <div class="meta-row">
-        <span><span class="dot"></span><span id="weekday">…</span></span>
-        <span id="weatherSpan">…</span>
-      </div>
+      <p class="lede" id="lede">Загрузка данных…</p>
     </header>
 
-    <!-- ============ HERO STAT ============ -->
-    <section class="spread">
-      <div class="spread-label">№ 1 · Цифра дня</div>
+    <!-- ============ WEATHER ============ -->
+    <div class="weather-card" id="weatherCard">
+      <div class="weather-icon" id="weatherIcon">⏳</div>
+      <div class="weather-meta">
+        <div class="weather-day"><span id="weekday">Сегодня</span> · Москва</div>
+        <div class="weather-temp" id="weatherTemp">…</div>
+        <div class="weather-cond" id="weatherCond">…</div>
+        <div class="weather-rec" id="weatherRec"></div>
+      </div>
+    </div>
 
+    <!-- ============ HERO STAT — STEPS ============ -->
+    <section class="section delayed-1">
+      <div class="section-title t-amber">⚡ Цифра дня</div>
       <div class="hero-stat">
+        <div class="hero-stat-label">Шаги — за сегодня</div>
         <div class="hero-stat-num" id="heroNum">…</div>
-        <div class="hero-stat-meta" id="heroMeta">…</div>
-      </div>
-
-      <div class="hero-stat-cap" id="heroCap">…</div>
-    </section>
-
-    <!-- ============ STAT TABLE ============ -->
-    <section class="spread delayed-2">
-      <div class="spread-label">№ 2 · Утренний обзор</div>
-
-      <div class="stat-table">
-        <div class="stat-row">
-          <span class="stat-name">Сон</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">6:30 <small>/ 8:00</small></span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-name">Качество</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">72 <small>/100</small></span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-name">Шаги</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">5 234 <small>/7 000</small></span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-name">Пульс покоя</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">58 <small>уд/мин</small></span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-name">Body Battery</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">45 <small>→</small> 78</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-name">Стресс</span>
-          <span class="stat-leader">·············</span>
-          <span class="stat-num">28 <small>/100</small></span>
+        <div class="hero-stat-goal" id="heroGoal">/ 7000 шагов</div>
+        <div class="hero-stat-progress"><div class="hero-stat-progress-fill" id="heroProgress" style="--pct: 0%"></div></div>
+        <div class="hero-stat-meta">
+          <span id="heroPct">…</span>
+          <span id="heroDelta"></span>
         </div>
       </div>
     </section>
 
-    <!-- ============ CHARTS ============ -->
-    <section class="spread delayed-3">
-      <div class="spread-label">№ 3 · Тренды недели</div>
-
-      <div class="chart-block">
-        <div class="chart-head">
-          <span class="chart-name">Сон, часы</span>
-          <span class="chart-meta">7 дней · ср. <b>6:54</b></span>
+    <!-- ============ TODAY STATS GRID ============ -->
+    <section class="section delayed-2">
+      <div class="section-title">📊 Показатели дня</div>
+      <div class="stat-grid">
+        <div class="stat-card sleep">
+          <div class="stat-card-head"><span class="stat-card-icon">😴</span><span class="stat-card-name">Сон</span></div>
+          <div class="stat-card-value" id="cardSleep">…</div>
+          <div class="stat-card-sub" id="cardSleepSub">прошлой ночью</div>
         </div>
-        <svg class="chart-svg" viewBox="0 0 280 90" id="sleepChart"></svg>
+        <div class="stat-card quality">
+          <div class="stat-card-head"><span class="stat-card-icon">⭐</span><span class="stat-card-name">Качество сна</span></div>
+          <div class="stat-card-value" id="cardQuality">…</div>
+          <div class="stat-card-sub">из 100</div>
+        </div>
+        <div class="stat-card hr">
+          <div class="stat-card-head"><span class="stat-card-icon">❤️</span><span class="stat-card-name">Пульс покоя</span></div>
+          <div class="stat-card-value" id="cardHr">…</div>
+          <div class="stat-card-sub">уд/мин</div>
+        </div>
+        <div class="stat-card bb">
+          <div class="stat-card-head"><span class="stat-card-icon">🔋</span><span class="stat-card-name">Body Battery</span></div>
+          <div class="stat-card-value" id="cardBb">…</div>
+          <div class="stat-card-sub" id="cardBbSub">за день</div>
+        </div>
+        <div class="stat-card stress">
+          <div class="stat-card-head"><span class="stat-card-icon">🌊</span><span class="stat-card-name">Стресс</span></div>
+          <div class="stat-card-value" id="cardStress">…</div>
+          <div class="stat-card-sub">средний / 100</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ WEEK CHARTS ============ -->
+    <section class="section delayed-3">
+      <div class="section-title t-purple">📈 Эта неделя</div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-name">Сон</span>
+          <span class="chart-meta">среднее <b id="sleepAvg">…</b></span>
+        </div>
+        <div class="chart-explain">Сколько часов спал каждый день. Пунктир — норма 8 ч.</div>
+        <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="sleepChart"></svg></div>
       </div>
 
-      <div class="chart-block">
-        <div class="chart-head">
-          <span class="chart-name">Калории</span>
-          <span class="chart-meta">тренд <b class="down">+120</b></span>
-        </div>
-        <svg class="chart-svg" viewBox="0 0 280 90" id="calChart"></svg>
-      </div>
-
-      <div class="chart-block">
+      <div class="chart-card">
         <div class="chart-head">
           <span class="chart-name">Шаги</span>
-          <span class="chart-meta">≥7 000 — <b>4 из 7</b></span>
+          <span class="chart-meta">цель закрыта <b id="stepsHit">…</b></span>
         </div>
-        <svg class="chart-svg" viewBox="0 0 280 90" id="stepsChart"></svg>
+        <div class="chart-explain">
+          Шаги за каждый день. <span style="color: var(--emerald);">Жёлтый</span> — выше цели 7000, <span style="color: var(--coral);">розовый</span> — ниже.
+        </div>
+        <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="stepsChart"></svg></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-name">Калории</span>
+          <span class="chart-meta" id="calMeta">в работе</span>
+        </div>
+        <div class="chart-explain">Питание пока не сохраняется структурно — это отдельная задача.</div>
+        <div class="chart-wrap"><div class="chart-empty">📋 Скоро будет<small>Структурный трекинг питания через бота — следующий этап</small></div></div>
       </div>
     </section>
 
     <!-- ============ GOALS ============ -->
-    <section class="spread delayed-4">
-      <div class="spread-label">№ 4 · Цели в работе</div>
-
-      <div class="goal-list">
-
-        <div class="goal-item">
-          <span class="goal-cap">Вес — 75 кг</span>
-          <span class="goal-val">78<small>·текущий</small></span>
-          <div class="goal-track" style="--pct: 70%"></div>
-        </div>
-
-        <div class="goal-item">
-          <span class="goal-cap">Тренировки</span>
-          <span class="goal-val">2<small>/3 за неделю</small></span>
-          <div class="training-marks">
-            <span class="day done">Пн</span>
-            <span class="day done">Ср</span>
-            <span class="day today">Чт</span>
-            <span class="day">Пт</span>
-            <span class="day">Сб</span>
-            <span class="day">Вс</span>
-            <span class="day">Пн</span>
-          </div>
-        </div>
-
-        <div class="goal-item">
-          <span class="goal-cap">Шаги — 7 000 в день</span>
-          <span class="goal-val">5 234<small>·сейчас</small></span>
-          <div class="goal-track" style="--pct: 75%"></div>
-        </div>
-
-        <div class="goal-item">
-          <span class="goal-cap">Сон — 8 часов</span>
-          <span class="goal-val">6:42<small>·среднее</small></span>
-          <div class="goal-track full" style="--pct: 81%"></div>
-        </div>
-
+    <section class="section delayed-4">
+      <div class="section-title t-emerald">🎯 Цели в работе</div>
+      <div class="goals" id="goalsList">
+        <div class="goal"><span class="goal-text">Загрузка…</span></div>
       </div>
     </section>
 
     <!-- ============ TIMELINE ============ -->
-    <section class="spread delayed-5">
-      <div class="spread-label">№ 5 · Хронология дня</div>
-
-      <div class="timeline">
-        <div class="tl-item done"><span class="tl-time">08:00</span><span class="tl-marker"></span><span class="tl-text">Утренняя сводка</span></div>
-        <div class="tl-item done"><span class="tl-time">08:10</span><span class="tl-marker"></span><span class="tl-text">Завтрак записан</span></div>
-        <div class="tl-item done"><span class="tl-time">08:30</span><span class="tl-marker"></span><span class="tl-text">Детралекс + Нигепан</span></div>
-        <div class="tl-item done"><span class="tl-time">09:00</span><span class="tl-marker"></span><span class="tl-text">Стакан воды натощак</span></div>
-        <div class="tl-item now"><span class="tl-time">12:30</span><span class="tl-marker"></span><span class="tl-text">Обед — что ел?</span></div>
-        <div class="tl-item"><span class="tl-time">14:00</span><span class="tl-marker"></span><span class="tl-text">Стакан воды</span></div>
-        <div class="tl-item"><span class="tl-time">18:10</span><span class="tl-marker"></span><span class="tl-text">Ужин</span></div>
-        <div class="tl-item"><span class="tl-time">18:30</span><span class="tl-marker"></span><span class="tl-text">Детралекс — вечерний</span></div>
-        <div class="tl-item"><span class="tl-time">22:30</span><span class="tl-marker"></span><span class="tl-text">Свернуть дела — отбой через час</span></div>
-        <div class="tl-item"><span class="tl-time">23:00</span><span class="tl-marker"></span><span class="tl-text">Нигепан — вечерний</span></div>
+    <section class="section delayed-4">
+      <div class="section-title t-coral">⏰ Хронология дня</div>
+      <div class="timeline" id="timeline">
+        <div class="tl-item future"><span class="tl-time">…</span><span class="tl-checkbox"></span><span class="tl-text">Загрузка…</span></div>
       </div>
     </section>
 
-    <!-- ============ COLOPHON ============ -->
-    <footer class="colophon">
-      <div class="ornament">·  ·  ✦  ·  ·</div>
+    <footer class="footer">
+      <div class="ornament">·  ·  ◆  ·  ·</div>
       <div>HOME · CLAUDE · TELEGRAM</div>
-      <div class="small">Издание персональное · POC v0.0.0.1 · mock-данные<br/><span id="tgInfo">desktop preview</span></div>
+      <div style="font-size: 8px; opacity: 0.6; margin-top: 6px;" id="tgInfo">desktop preview</div>
     </footer>
-
   </div>
 
   <script>
-    // ==== Config ====
-    // API_DOMAIN — заменяется sed-ом при первом deploy на реальный DuckDNS subdomain
     const API_DOMAIN = "telegramminiapp.duckdns.org";
     const ZOZ_CHAT_ID = -5212912575;
 
-    // ==== Telegram WebApp integration ====
+    // ==== Telegram WebApp ====
     const tg = window.Telegram?.WebApp;
     let initData = "";
     let tgUser = null;
@@ -671,313 +687,301 @@
       tg.ready();
       initData = tg.initData || "";
       tgUser = tg.initDataUnsafe?.user || null;
-      try { tg.setHeaderColor("#0e1812"); } catch(e) {}
-      try { tg.setBackgroundColor("#0e1812"); } catch(e) {}
-
+      try { tg.setHeaderColor("#0a0e1a"); } catch(e) {}
+      try { tg.setBackgroundColor("#0a0e1a"); } catch(e) {}
       document.getElementById('tgInfo').textContent =
         `${tg.platform || 'unknown'} · ${tg.colorScheme || 'dark'}${tgUser?.first_name ? ' · ' + tgUser.first_name : ''}`;
     }
 
-    // ==== Greeting word, depending on hour (МСК-relative) ====
+    // ==== Greeting (грамматика рода) ====
     function setGreeting() {
       const h = new Date().getHours();
-      document.getElementById('userName').textContent =
-        h < 6  ? 'Ночь' :
-        h < 12 ? 'Утро' :
-        h < 18 ? 'День' :
-                 'Вечер';
+      let pair;
+      if (h < 6)       pair = ['Доброй', 'ночи'];        // ж.р.
+      else if (h < 12) pair = ['Доброе', 'утро'];        // ср.р.
+      else if (h < 18) pair = ['Добрый', 'день'];        // м.р.
+      else             pair = ['Добрый', 'вечер'];       // м.р.
+      document.getElementById('greetWord').textContent = pair[0];
+      document.getElementById('greetTime').textContent = pair[1];
     }
     setGreeting();
 
-    // ==== Date — roman month ====
+    // ==== Date ====
     const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+    const daysShort = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
     const romanMonths = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     const d = new Date();
     document.getElementById('weekday').textContent = days[d.getDay()];
     document.getElementById('issueDate').textContent =
       `${String(d.getDate()).padStart(2,'0')}·${romanMonths[d.getMonth()]}·${d.getFullYear()}`;
-    // Issue number — fallback на client side (API подменит точным значением)
-    const start = new Date('2026-03-17');
-    const dayN = Math.floor((d - start) / (1000*60*60*24)) + 1;
+    const projectStart = new Date('2026-03-17');
+    const dayN = Math.floor((d - projectStart) / (1000*60*60*24)) + 1;
     document.getElementById('issueN').textContent = String(dayN).padStart(3,'0');
 
-    // ==== Custom SVG charts ====
-    function drawLineChart(svgId, data, opts={}) {
-      const svg = document.getElementById(svgId);
-      const W = 280, H = 90, padL = 6, padR = 6, padT = 8, padB = 18;
-      const dw = W - padL - padR, dh = H - padT - padB;
-      const min = opts.min ?? Math.min(...data) * 0.92;
-      const max = opts.max ?? Math.max(...data) * 1.05;
-      const labels = opts.labels || data.map((_,i)=>i+1);
-
-      const points = data.map((v, i) => {
-        const x = padL + (i / (data.length - 1)) * dw;
-        const y = padT + dh - ((v - min) / (max - min)) * dh;
-        return [x, y];
-      });
-
-      let path = points.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join('');
-      let fillPath = path + `L${points[points.length-1][0]},${padT+dh}L${points[0][0]},${padT+dh}Z`;
-
-      const pathLen = points.reduce((acc, p, i) => i === 0 ? 0 : acc + Math.hypot(p[0]-points[i-1][0], p[1]-points[i-1][1]), 0);
-
-      let targetLine = '';
-      if (opts.target !== undefined) {
-        const ty = padT + dh - ((opts.target - min) / (max - min)) * dh;
-        targetLine = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
-      }
-
-      const xLabels = labels.map((l,i) => {
-        const x = padL + (i / (data.length - 1)) * dw;
-        return `<text x="${x}" y="${H-4}" text-anchor="middle">${l}</text>`;
-      }).join('');
-
-      const dots = points.map((p,i) => `<circle class="chart-dot" cx="${p[0]}" cy="${p[1]}" style="animation-delay: ${800 + i*60}ms"/>`).join('');
-
-      svg.innerHTML = `
-        ${targetLine}
-        <path class="chart-fill" d="${fillPath}" fill="${opts.color}"/>
-        <path class="chart-line" d="${path}" stroke="${opts.color}" style="--len: ${pathLen}"/>
-        ${dots}
-        <g class="chart-axis">${xLabels}</g>
-      `;
+    // ==== Weather emoji from WMO code ====
+    function weatherEmoji(code) {
+      if (code == null) return '⛅';
+      if (code === 0) return '☀️';
+      if (code <= 3) return '⛅';
+      if ([45,48].includes(code)) return '🌫️';
+      if ([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧️';
+      if ([71,73,75,77,85,86].includes(code)) return '❄️';
+      if ([95,96,99].includes(code)) return '⛈️';
+      return '⛅';
     }
 
-    function drawBarChart(svgId, data, opts={}) {
-      const svg = document.getElementById(svgId);
-      const W = 280, H = 90, padL = 6, padR = 6, padT = 8, padB = 18;
-      const dw = W - padL - padR, dh = H - padT - padB;
-      const max = opts.max ?? Math.max(...data) * 1.1;
-      const labels = opts.labels || data.map((_,i)=>i+1);
-      const bw = dw / data.length * 0.62;
-      const gap = dw / data.length;
-
-      const bars = data.map((v, i) => {
-        const x = padL + i * gap + (gap - bw)/2;
-        const h = (v / max) * dh;
-        const y = padT + dh - h;
-        const cls = (opts.thresh !== undefined && v < opts.thresh) ? 'chart-bar bar-rect below' : 'chart-bar bar-rect';
-        const fill = (opts.thresh !== undefined && v < opts.thresh) ? opts.colorBelow : opts.color;
-        return `<rect class="${cls}" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${600 + i*70}ms; transform-origin: ${x}px ${padT+dh}px"/>`;
-      }).join('');
-
-      let targetLine = '';
-      if (opts.target !== undefined) {
-        const ty = padT + dh - (opts.target / max) * dh;
-        targetLine = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
-      }
-
-      const xLabels = labels.map((l,i) => {
-        const x = padL + i * gap + gap/2;
-        return `<text x="${x}" y="${H-4}" text-anchor="middle">${l}</text>`;
-      }).join('');
-
-      svg.innerHTML = `${targetLine}${bars}<g class="chart-axis">${xLabels}</g>`;
-    }
-
-    // ==== Mock fallback (используется если API недоступен) ====
-    const MOCK_DATA = {
-      user: { name: tgUser?.first_name || 'Санёк', agent: 'aleksandr' },
-      issue_n: dayN,
-      today: { sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28 },
-      week: {
-        sleep:    [7.25, 6.75, 7.5, 5.83, 8.0, 6.5, 6.5],
-        calories: [2100, 1950, 2300, 1700, 2000, 1850, 1850],
-        steps:    [8200, 7500, 9100, 4500, 11000, 6800, 5234],
-        labels:   ['Чт','Пт','Сб','Вс','Пн','Вт','Ср']
-      },
-      goals: [
-        { label: 'Снижение % жира: 28.3% → 20%' },
-        { label: 'Рост % мышц: 67.9% → 75%' },
-        { label: 'V-образная фигура' },
-        { label: 'Здоровая спина' }
-      ],
-      timeline: [
-        { time: '08:00', text: 'Утренняя сводка', status: 'done' },
-        { time: '08:10', text: 'Завтрак', status: 'done' },
-        { time: '12:30', text: 'Обед — что ел?', status: 'now' },
-        { time: '23:00', text: 'Нигепан', status: 'future' }
-      ],
-      weather: '+0…+5°C, небольшой снегопад, осадки 30%, ветер 2 м/с'
-    };
-
-    // ==== Render helpers ====
+    // ==== Helpers ====
     function fmt(n) { return n == null ? '—' : new Intl.NumberFormat('ru-RU').format(n); }
-    function hhmm(h) {
+    function hm(h) {
       if (h == null) return '—';
       const hh = Math.floor(h);
       const mm = Math.round((h - hh) * 60);
-      return `${hh}:${String(mm).padStart(2,'0')}`;
+      return `${hh}ч ${String(mm).padStart(2,'0')}м`;
     }
-
-    function renderHero(data) {
-      const today = data.today || {};
-      if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
-
-      // Hero stat: шаги как dominant цифра (питание не структурировано пока)
-      const heroNum = document.getElementById('heroNum');
-      const heroMeta = document.getElementById('heroMeta');
-      const heroCap = document.getElementById('heroCap');
-      if (today.steps != null) {
-        heroNum.innerHTML = `${fmt(today.steps)}<sup>/7000 шагов</sup>`;
-        const pct = Math.min(100, Math.round((today.steps / 7000) * 100));
-        heroMeta.textContent = `${pct}% дневной нормы`;
-      } else {
-        heroNum.textContent = '—';
-        heroMeta.textContent = 'нет данных';
-      }
-
-      // Hero caption — общий статус из реальных данных, без хардкода калорий/белков
-      const capParts = [];
-      if (today.sleep_hours != null) capParts.push(`сон <b>${hhmm(today.sleep_hours)}</b>`);
-      if (today.body_battery) capParts.push(`Body Battery ${today.body_battery[0]}→${today.body_battery[1]}`);
-      if (today.resting_hr) capParts.push(`пульс покоя ${today.resting_hr}`);
-      heroCap.innerHTML = capParts.length
-        ? `<b>За вчера:</b> ${capParts.join(', ')}.`
-        : '';
-
-      // Stat-table — обновим строки
-      const rows = document.querySelectorAll('.stat-table .stat-row');
-      const map = [
-        { name: 'Сон', val: today.sleep_hours != null ? `${hhmm(today.sleep_hours)} <small>/ 8:00</small>` : '—' },
-        { name: 'Качество', val: today.sleep_quality != null ? `${today.sleep_quality} <small>/100</small>` : '—' },
-        { name: 'Шаги', val: today.steps != null ? `${fmt(today.steps)} <small>/7 000</small>` : '—' },
-        { name: 'Пульс покоя', val: today.resting_hr != null ? `${today.resting_hr} <small>уд/мин</small>` : '—' },
-        { name: 'Body Battery', val: today.body_battery ? `${today.body_battery[0]} <small>→</small> ${today.body_battery[1]}` : '—' },
-        { name: 'Стресс', val: today.stress != null ? `${today.stress} <small>/100</small>` : '—' }
-      ];
-      rows.forEach((r, i) => {
-        if (i < map.length) {
-          const numEl = r.querySelector('.stat-num');
-          if (numEl) numEl.innerHTML = map[i].val;
-        }
-      });
-
-      // Weather в отдельном span
-      const weatherEl = document.getElementById('weatherSpan');
-      if (weatherEl) weatherEl.textContent = data.weather ? `Москва · ${data.weather}` : 'Москва';
-
-      // Lede — короткий итог дня
-      const lede = document.getElementById('lede');
-      if (lede) {
-        if (today.sleep_hours != null) {
-          const sleepStr = hhmm(today.sleep_hours);
-          const isShort = today.sleep_hours < 7;
-          const stepsStr = today.steps != null ? fmt(today.steps) : '—';
-          lede.innerHTML = `Сегодня ты спал <em>${sleepStr}</em>. ${isShort ? '<em>Это меньше, чем нужно.</em>' : 'Хорошо.'} Шаги вчера: <em>${stepsStr}</em>.`;
-        } else {
-          lede.textContent = 'Garmin данные пока не загружены.';
-        }
-      }
-    }
-
-    function renderCharts(week) {
-      if (!week) return;
-      const labels = week.labels || ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-
-      // Sleep bar chart — пропускаем null значения
-      const sleepData = (week.sleep || []).map(v => v ?? 0);
-      drawBarChart('sleepChart', sleepData, {
-        labels, target: 8, max: 9, color: '#c8b274', colorBelow: '#7a8c7d', thresh: 7
-      });
-
-      // Calories — line. Если все null → показываем плейсхолдер
-      const calData = (week.calories || []).map(v => v ?? 0);
-      const hasCal = calData.some(v => v > 0);
-      const calSvg = document.getElementById('calChart');
-      if (hasCal) {
-        drawLineChart('calChart', calData, {
-          labels, target: 2200, min: 1500, max: 2400, color: '#c8b274'
-        });
-      } else {
-        calSvg.innerHTML = `<text x="140" y="50" text-anchor="middle" fill="#7a8c7d" font-family="IBM Plex Mono" font-size="10" letter-spacing="0.1em">данные питания пока не структурированы</text>`;
-      }
-
-      // Steps
-      const stepsData = (week.steps || []).map(v => v ?? 0);
-      drawBarChart('stepsChart', stepsData, {
-        labels, target: 7000, max: Math.max(12000, ...stepsData) * 1.05, color: '#c8b274', colorBelow: '#c84d4d', thresh: 7000
-      });
-    }
-
-    function renderGoals(goals) {
-      const container = document.querySelector('.goal-list');
-      if (!container || !goals || !goals.length) return;
-      // Заменяем содержимое
-      container.innerHTML = goals.map(g => `
-        <div class="goal-item">
-          <span class="goal-cap">${escapeHtml(g.label)}</span>
-          <span class="goal-val">в работе</span>
-        </div>
-      `).join('');
-    }
-
-    function renderTimeline(timeline) {
-      const container = document.querySelector('.timeline');
-      if (!container || !timeline || !timeline.length) return;
-      container.innerHTML = timeline.map(t => `
-        <div class="tl-item ${t.status === 'done' ? 'done' : (t.status === 'now' ? 'now' : '')}">
-          <span class="tl-time">${escapeHtml(t.time)}</span>
-          <span class="tl-marker"></span>
-          <span class="tl-text">${escapeHtml(t.text)}</span>
-        </div>
-      `).join('');
-    }
-
     function escapeHtml(s) {
       if (s == null) return '';
       return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function showError(msg) {
-      // Покажем баннер сверху
-      const issue = document.querySelector('.issue');
-      if (!issue) return;
-      const banner = document.createElement('div');
-      banner.style.cssText = 'background:#c84d4d;color:#f5f0e6;padding:10px 22px;font-family:IBM Plex Mono,monospace;font-size:11px;letter-spacing:0.1em;text-align:center;';
-      banner.textContent = `⚠ ${msg} — показаны mock-данные`;
-      issue.insertBefore(banner, issue.firstChild);
-    }
+    // ==== Mock fallback ====
+    const MOCK_DATA = {
+      user: { name: tgUser?.first_name || 'Санёк' },
+      issue_n: dayN,
+      today: { sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28 },
+      week: {
+        sleep:    [7.25, 6.75, 7.5, 5.83, 8.0, 6.5, 6.5],
+        calories: [null,null,null,null,null,null,null],
+        steps:    [8200, 7500, 9100, 4500, 11000, 6800, 5234],
+        labels:   ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+      },
+      goals: [
+        { label: 'Снижение % жира: 28.3% → 20%' },
+        { label: 'Рост % мышц: 67.9% → 75%' }
+      ],
+      timeline: [
+        { time: '08:00', text: 'Утренняя сводка', status: 'done' },
+        { time: '12:30', text: 'Обед', status: 'now' }
+      ],
+      weather: { t_min: 0, t_max: 5, t_now: 4, wcode: 85, condition: 'небольшой снегопад', precip_prob: 30, wind: 2, recommendation: 'Снегопад — тёплая обувь и варежки' }
+    };
 
     // ==== Render ====
-    function renderAll(data) {
-      renderHero(data);
-      renderCharts(data.week);
-      renderGoals(data.goals);
-      renderTimeline(data.timeline);
+    function renderHero(data) {
+      const t = data.today || {};
+      if (data.user?.name) document.getElementById('userName').textContent = data.user.name;
+      if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
+
+      // Hero — шаги
+      const heroNum = document.getElementById('heroNum');
+      const heroPct = document.getElementById('heroPct');
+      const heroProgress = document.getElementById('heroProgress');
+      if (t.steps != null) {
+        heroNum.textContent = fmt(t.steps);
+        const pct = Math.min(100, Math.round((t.steps / 7000) * 100));
+        heroPct.innerHTML = `<b>${pct}%</b> от цели 7 000 шагов`;
+        heroProgress.style.setProperty('--pct', pct + '%');
+      } else {
+        heroNum.textContent = '—';
+      }
+
+      // Lede dynamic
+      const lede = document.getElementById('lede');
+      const parts = [];
+      if (t.sleep_hours != null) {
+        const h = hm(t.sleep_hours);
+        const isShort = t.sleep_hours < 7;
+        parts.push(isShort ? `Спал <em>${h}</em> — это меньше нормы 8ч.` : `Спал ${h} — нормально.`);
+      }
+      if (t.steps != null) {
+        const remaining = Math.max(0, 7000 - t.steps);
+        if (remaining > 0) parts.push(`До цели в шагах осталось ${fmt(remaining)}.`);
+        else parts.push(`Цель по шагам уже закрыта.`);
+      }
+      lede.innerHTML = parts.length ? parts.join(' ') : 'Загрузка данных Garmin…';
     }
 
-    // ==== Load real data from API or fallback to mock ====
-    // Sentinel — НЕ совпадает с API_DOMAIN после замены sed (важно: не использовать
-    // здесь хост telegramminiapp.duckdns.org буквально, иначе sed его сломает).
-    const API_DOMAIN_SENTINEL = "_PLACEHOLDER_NEVER_MATCH_";
+    function renderStats(today) {
+      today = today || {};
+      const set = (id, html, fallback = '—') => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html != null && html !== '' ? html : fallback;
+      };
+
+      set('cardSleep', today.sleep_hours != null ? hm(today.sleep_hours) + '<small> / 8ч</small>' : null);
+      set('cardQuality', today.sleep_quality != null ? today.sleep_quality : null);
+      set('cardHr', today.resting_hr != null ? today.resting_hr : null);
+      if (today.body_battery) {
+        set('cardBb', `${today.body_battery[0]}<small> → </small>${today.body_battery[1]}`);
+        const delta = today.body_battery[1] - today.body_battery[0];
+        const sub = delta > 0 ? `+${delta} за день` : (delta < 0 ? `${delta} за день` : 'без изменений');
+        document.getElementById('cardBbSub').textContent = sub;
+      } else {
+        set('cardBb', null);
+      }
+      set('cardStress', today.stress != null ? today.stress : null);
+    }
+
+    function renderWeather(w) {
+      const card = document.getElementById('weatherCard');
+      if (!w || (!w.t_max && !w.t_now)) { card.style.display = 'none'; return; }
+      document.getElementById('weatherIcon').textContent = weatherEmoji(w.wcode);
+      const tNow = w.t_now != null ? `${w.t_now > 0 ? '+' : ''}${Math.round(w.t_now)}°` : '';
+      const tRange = (w.t_min != null && w.t_max != null)
+        ? ` · днём ${w.t_min > 0 ? '+' : ''}${Math.round(w.t_min)}…${w.t_max > 0 ? '+' : ''}${Math.round(w.t_max)}°`
+        : '';
+      document.getElementById('weatherTemp').textContent = (tNow ? `сейчас ${tNow}` : '') + tRange;
+      const cond = [];
+      if (w.condition) cond.push(w.condition);
+      if (w.precip_prob > 20) cond.push(`осадки ${Math.round(w.precip_prob)}%`);
+      if (w.wind != null) cond.push(`ветер ${Math.round(w.wind)} м/с`);
+      document.getElementById('weatherCond').textContent = cond.join(' · ') || '—';
+      document.getElementById('weatherRec').textContent = w.recommendation || '';
+    }
+
+    function renderGoals(goals) {
+      const container = document.getElementById('goalsList');
+      if (!goals || !goals.length) {
+        container.innerHTML = '<div class="goal"><span class="goal-text">Целей пока нет — обнови закреп ЗОЖ-чата</span></div>';
+        return;
+      }
+      container.innerHTML = goals.map(g => `
+        <div class="goal">
+          <span class="goal-text">${escapeHtml(g.label)}</span>
+          <span class="goal-tag">в работе</span>
+        </div>
+      `).join('');
+    }
+
+    function renderTimeline(timeline) {
+      const container = document.getElementById('timeline');
+      if (!timeline || !timeline.length) {
+        container.innerHTML = '<div class="tl-item future"><span class="tl-time">—</span><span class="tl-checkbox"></span><span class="tl-text">Напоминаний на сегодня нет</span></div>';
+        return;
+      }
+      container.innerHTML = timeline.map(t => `
+        <div class="tl-item ${t.status === 'done' ? 'done' : (t.status === 'now' ? 'now' : 'future')}">
+          <span class="tl-time">${escapeHtml(t.time)}</span>
+          <span class="tl-checkbox"></span>
+          <span class="tl-text">${escapeHtml(t.text)}</span>
+        </div>
+      `).join('');
+    }
+
+    // ==== Charts ====
+    function drawSleepChart(data, labels) {
+      const svg = document.getElementById('sleepChart');
+      const W = 320, H = 110, padL = 4, padR = 4, padT = 8, padB = 22;
+      const dw = W - padL - padR, dh = H - padT - padB;
+      const max = 9, min = 4;
+      const bw = dw / data.length * 0.6;
+      const gap = dw / data.length;
+
+      const bars = data.map((v, i) => {
+        if (v == null || v === 0) return '';
+        const x = padL + i * gap + (gap - bw) / 2;
+        const h = ((v - min) / (max - min)) * dh;
+        const y = padT + dh - h;
+        const fill = v >= 7 ? 'var(--cyan)' : 'rgba(34, 211, 238, 0.4)';
+        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+      }).join('');
+
+      // Target line at 8h
+      const ty = padT + dh - ((8 - min) / (max - min)) * dh;
+      const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
+
+      const xLabels = labels.map((l, i) => {
+        const x = padL + i * gap + gap / 2;
+        return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
+      }).join('');
+
+      svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+    }
+
+    function drawStepsChart(data, labels) {
+      const svg = document.getElementById('stepsChart');
+      const W = 320, H = 110, padL = 4, padR = 4, padT = 8, padB = 22;
+      const dw = W - padL - padR, dh = H - padT - padB;
+      const max = Math.max(12000, ...data.filter(v => v != null));
+      const bw = dw / data.length * 0.6;
+      const gap = dw / data.length;
+
+      const bars = data.map((v, i) => {
+        if (v == null) return '';
+        const x = padL + i * gap + (gap - bw) / 2;
+        const h = (v / max) * dh;
+        const y = padT + dh - h;
+        const fill = v >= 7000 ? 'var(--amber)' : 'var(--coral)';
+        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+      }).join('');
+
+      // Target line at 7000
+      const ty = padT + dh - (7000 / max) * dh;
+      const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
+
+      const xLabels = labels.map((l, i) => {
+        const x = padL + i * gap + gap / 2;
+        return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
+      }).join('');
+
+      svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+    }
+
+    function renderWeek(week) {
+      week = week || { sleep: [], steps: [], labels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] };
+      const labels = week.labels || ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+      const sleepData = (week.sleep || []).map(v => v ?? 0);
+      const stepsData = week.steps || [];
+
+      drawSleepChart(sleepData, labels);
+      drawStepsChart(stepsData, labels);
+
+      // Avg sleep
+      const validSleep = (week.sleep || []).filter(v => v != null && v > 0);
+      const avgSleep = validSleep.length ? (validSleep.reduce((a,b) => a+b, 0) / validSleep.length) : null;
+      document.getElementById('sleepAvg').textContent = avgSleep ? hm(avgSleep) : '—';
+
+      // Steps cell hits
+      const validSteps = stepsData.filter(v => v != null);
+      const hits = validSteps.filter(v => v >= 7000).length;
+      document.getElementById('stepsHit').textContent = `${hits} из 7 дней`;
+    }
+
+    function renderAll(data) {
+      renderHero(data);
+      renderStats(data.today);
+      renderWeather(data.weather);
+      renderGoals(data.goals);
+      renderTimeline(data.timeline);
+      renderWeek(data.week);
+    }
+
+    function showError(msg) {
+      const app = document.querySelector('.app');
+      const banner = document.createElement('div');
+      banner.className = 'error-banner';
+      banner.textContent = `⚠ ${msg} — показаны mock-данные`;
+      app.insertBefore(banner, app.firstChild);
+    }
+
+    // ==== Load ====
     async function loadData() {
       console.log('[miniapp] API_DOMAIN =', API_DOMAIN, 'initData len =', (initData||'').length);
-
-      // Если API_DOMAIN не настроен — mock
       if (!API_DOMAIN || API_DOMAIN.indexOf('PLACEHOLDER') >= 0) {
-        console.warn('[miniapp] API_DOMAIN не настроен — mock');
         showError('API_DOMAIN не задан');
         renderAll(MOCK_DATA);
         return;
       }
-      // Если нет initData (desktop preview) — mock без banner
       if (!initData) {
-        console.warn('[miniapp] нет initData — desktop preview, mock');
         renderAll(MOCK_DATA);
         return;
       }
-      const cacheBust = Date.now();
-      const url = `https://${API_DOMAIN}/api/dashboard?chat=${ZOZ_CHAT_ID}&_=${cacheBust}`;
-      console.log('[miniapp] fetching', url);
+      const url = `https://${API_DOMAIN}/api/dashboard?chat=${ZOZ_CHAT_ID}&_=${Date.now()}`;
       try {
         const r = await fetch(url, {
-          method: 'GET',
           headers: { 'X-Init-Data': initData },
           cache: 'no-store',
           mode: 'cors'
         });
-        console.log('[miniapp] response status', r.status);
         if (!r.ok) {
           const txt = await r.text().catch(() => '');
           showError(`API ${r.status}: ${txt.slice(0,80)}`);
@@ -985,10 +989,8 @@
           return;
         }
         const data = await r.json();
-        console.log('[miniapp] real data ok');
         renderAll(data);
       } catch (e) {
-        console.error('[miniapp] fetch failed', e);
         showError(`сеть: ${e.message || e}`);
         renderAll(MOCK_DATA);
       }
