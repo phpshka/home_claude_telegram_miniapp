@@ -118,13 +118,19 @@
 
     .meta-row {
       display: flex;
-      gap: 18px;
+      flex-wrap: wrap;
+      gap: 8px 16px;
       font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
-      letter-spacing: 0.08em;
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
       color: var(--paper-dim);
       text-transform: uppercase;
       animation: rise 700ms 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      max-width: 100%;
+    }
+    .meta-row span#weatherSpan {
+      flex: 1 1 100%;
+      line-height: 1.5;
     }
     .meta-row span { display: inline-flex; align-items: center; gap: 6px; }
     .meta-row .dot { width: 4px; height: 4px; background: var(--gold); border-radius: 50%; display: inline-block; }
@@ -495,15 +501,11 @@
         Санёк.
       </h1>
 
-      <p class="lede">
-        Сегодня ты спал шесть с половиной часов. <em>Это меньше, чем нужно.</em>
-        Тренировка в плане. Курс лекарств — финальные дни.
-      </p>
+      <p class="lede" id="lede">Загрузка…</p>
 
       <div class="meta-row">
-        <span><span class="dot"></span><span id="weekday">Четверг</span></span>
-        <span>Москва · +0…+5°C</span>
-        <span>Снегопад</span>
+        <span><span class="dot"></span><span id="weekday">…</span></span>
+        <span id="weatherSpan">…</span>
       </div>
     </header>
 
@@ -512,14 +514,11 @@
       <div class="spread-label">№ 1 · Цифра дня</div>
 
       <div class="hero-stat">
-        <div class="hero-stat-num" id="heroNum">1850<sup>/2200 ккал</sup></div>
-        <div class="hero-stat-meta">85% дневной нормы</div>
+        <div class="hero-stat-num" id="heroNum">…</div>
+        <div class="hero-stat-meta" id="heroMeta">…</div>
       </div>
 
-      <div class="hero-stat-cap">
-        <b>За день съедено 1850 ккал из 2200.</b> Белков — 110 г, углеводов — 195 г, жиров — 62 г.
-        Дефицит небольшой, но ровный. Так держать.
-      </div>
+      <div class="hero-stat-cap" id="heroCap">…</div>
     </section>
 
     <!-- ============ STAT TABLE ============ -->
@@ -812,20 +811,30 @@
     }
 
     function renderHero(data) {
-      // userName уже выставлен в setGreeting()
+      const today = data.today || {};
       if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
 
-      // Cards: подменим значения внутри `.hero-stat-num` (калории как hero), таблицу
-      const today = data.today || {};
-
-      // Hero — пока показываем «вчерашние шаги» как hero stat (калорий нет в Garmin)
+      // Hero stat: шаги как dominant цифра (питание не структурировано пока)
       const heroNum = document.getElementById('heroNum');
+      const heroMeta = document.getElementById('heroMeta');
+      const heroCap = document.getElementById('heroCap');
       if (today.steps != null) {
         heroNum.innerHTML = `${fmt(today.steps)}<sup>/7000 шагов</sup>`;
         const pct = Math.min(100, Math.round((today.steps / 7000) * 100));
-        const meta = document.querySelector('.hero-stat-meta');
-        if (meta) meta.textContent = `${pct}% дневной нормы`;
+        heroMeta.textContent = `${pct}% дневной нормы`;
+      } else {
+        heroNum.textContent = '—';
+        heroMeta.textContent = 'нет данных';
       }
+
+      // Hero caption — общий статус из реальных данных, без хардкода калорий/белков
+      const capParts = [];
+      if (today.sleep_hours != null) capParts.push(`сон <b>${hhmm(today.sleep_hours)}</b>`);
+      if (today.body_battery) capParts.push(`Body Battery ${today.body_battery[0]}→${today.body_battery[1]}`);
+      if (today.resting_hr) capParts.push(`пульс покоя ${today.resting_hr}`);
+      heroCap.innerHTML = capParts.length
+        ? `<b>За вчера:</b> ${capParts.join(', ')}.`
+        : '';
 
       // Stat-table — обновим строки
       const rows = document.querySelectorAll('.stat-table .stat-row');
@@ -844,19 +853,21 @@
         }
       });
 
-      // Weather в meta-row
-      const metaSpans = document.querySelectorAll('.meta-row span');
-      if (metaSpans.length >= 2 && data.weather) {
-        metaSpans[1].textContent = `Москва · ${data.weather}`;
-        if (metaSpans[2]) metaSpans[2].textContent = '';
-      }
+      // Weather в отдельном span
+      const weatherEl = document.getElementById('weatherSpan');
+      if (weatherEl) weatherEl.textContent = data.weather ? `Москва · ${data.weather}` : 'Москва';
 
-      // Lede параграф — динамически из today
-      const lede = document.querySelector('.lede');
-      if (lede && today.sleep_hours != null) {
-        const sleepStr = hhmm(today.sleep_hours);
-        const isShort = today.sleep_hours < 7;
-        lede.innerHTML = `Сегодня ты спал <em>${sleepStr}</em>. ${isShort ? '<em>Это меньше, чем нужно.</em>' : 'Хорошо.'} Шаги: ${fmt(today.steps)}.`;
+      // Lede — короткий итог дня
+      const lede = document.getElementById('lede');
+      if (lede) {
+        if (today.sleep_hours != null) {
+          const sleepStr = hhmm(today.sleep_hours);
+          const isShort = today.sleep_hours < 7;
+          const stepsStr = today.steps != null ? fmt(today.steps) : '—';
+          lede.innerHTML = `Сегодня ты спал <em>${sleepStr}</em>. ${isShort ? '<em>Это меньше, чем нужно.</em>' : 'Хорошо.'} Шаги вчера: <em>${stepsStr}</em>.`;
+        } else {
+          lede.textContent = 'Garmin данные пока не загружены.';
+        }
       }
     }
 
@@ -937,32 +948,48 @@
     }
 
     // ==== Load real data from API or fallback to mock ====
+    // Sentinel — НЕ совпадает с API_DOMAIN после замены sed (важно: не использовать
+    // здесь хост telegramminiapp.duckdns.org буквально, иначе sed его сломает).
+    const API_DOMAIN_SENTINEL = "_PLACEHOLDER_NEVER_MATCH_";
     async function loadData() {
-      // Если API_DOMAIN ещё placeholder (deploy не прошёл) — сразу mock
-      if (!API_DOMAIN || API_DOMAIN === 'telegramminiapp.duckdns.org') {
+      console.log('[miniapp] API_DOMAIN =', API_DOMAIN, 'initData len =', (initData||'').length);
+
+      // Если API_DOMAIN не настроен — mock
+      if (!API_DOMAIN || API_DOMAIN.indexOf('PLACEHOLDER') >= 0) {
+        console.warn('[miniapp] API_DOMAIN не настроен — mock');
+        showError('API_DOMAIN не задан');
         renderAll(MOCK_DATA);
         return;
       }
-      // Если нет initData (preview в десктопном браузере) — mock
+      // Если нет initData (desktop preview) — mock без banner
       if (!initData) {
+        console.warn('[miniapp] нет initData — desktop preview, mock');
         renderAll(MOCK_DATA);
         return;
       }
+      const cacheBust = Date.now();
+      const url = `https://${API_DOMAIN}/api/dashboard?chat=${ZOZ_CHAT_ID}&_=${cacheBust}`;
+      console.log('[miniapp] fetching', url);
       try {
-        const url = `https://${API_DOMAIN}/api/dashboard?chat=${ZOZ_CHAT_ID}`;
         const r = await fetch(url, {
+          method: 'GET',
           headers: { 'X-Init-Data': initData },
-          cache: 'no-store'
+          cache: 'no-store',
+          mode: 'cors'
         });
+        console.log('[miniapp] response status', r.status);
         if (!r.ok) {
-          showError(`API ${r.status}`);
+          const txt = await r.text().catch(() => '');
+          showError(`API ${r.status}: ${txt.slice(0,80)}`);
           renderAll(MOCK_DATA);
           return;
         }
         const data = await r.json();
+        console.log('[miniapp] real data ok');
         renderAll(data);
       } catch (e) {
-        showError(`сеть недоступна: ${e.message}`);
+        console.error('[miniapp] fetch failed', e);
+        showError(`сеть: ${e.message || e}`);
         renderAll(MOCK_DATA);
       }
     }
