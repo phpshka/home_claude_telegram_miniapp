@@ -330,6 +330,35 @@
     .stat-card.kcal     .stat-card-icon { background: rgba(251, 191, 36, 0.12); color: var(--amber); }
     .stat-card.kcal     .stat-card-value { color: var(--amber); }
 
+    /* ============ TRAFFIC-LIGHT VALUE COLORS ============ */
+    /* Перебивают per-metric цвета через большую специфичность (.stat-card .x.y) */
+    .stat-card .stat-card-value.value-green  { color: var(--emerald); }
+    .stat-card .stat-card-value.value-yellow { color: var(--amber); }
+    .stat-card .stat-card-value.value-red    { color: var(--coral); }
+    .hero-stat-num.value-green  { color: var(--emerald); }
+    .hero-stat-num.value-yellow { color: var(--amber); }
+    .hero-stat-num.value-red    { color: var(--coral); }
+
+    /* ============ CHART INTERACTIVITY ============ */
+    .bar-rect.bar-clickable { cursor: pointer; transition: opacity 0.15s; }
+    .bar-rect.bar-clickable:active { opacity: 0.6; }
+    .chart-tooltip {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--fg-dim);
+      min-height: 22px;
+      text-align: center;
+      letter-spacing: 0.04em;
+      transition: opacity 0.2s;
+    }
+    .chart-tooltip b { color: var(--fg); font-weight: 700; }
+    .chart-tooltip.hint { color: var(--fg-mute); font-style: italic; }
+
     /* ============ CHARTS ============ */
     .chart-card {
       background: var(--bg-1);
@@ -606,7 +635,7 @@
     <div class="weather-card" id="weatherCard">
       <div class="weather-icon" id="weatherIcon">⏳</div>
       <div class="weather-meta">
-        <div class="weather-day"><span id="weekday">Сегодня</span> · Москва</div>
+        <div class="weather-day"><span id="weekday">Сегодня</span> · Москва<span id="weatherTime" style="margin-left:6px;color:var(--fg-mute);font-weight:500;letter-spacing:0.04em;text-transform:none;"></span></div>
         <div class="weather-temp" id="weatherTemp">…</div>
         <div class="weather-cond" id="weatherCond">…</div>
         <div class="weather-rec" id="weatherRec"></div>
@@ -676,6 +705,7 @@
         </div>
         <div class="chart-explain">Сколько часов спал каждый день. Пунктир — норма 8 ч.</div>
         <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="sleepChart"></svg></div>
+        <div class="chart-tooltip hint" id="sleepTooltip">Нажми на день, чтобы увидеть значение</div>
       </div>
 
       <div class="chart-card">
@@ -684,9 +714,10 @@
           <span class="chart-meta">цель закрыта <b id="stepsHit">…</b></span>
         </div>
         <div class="chart-explain">
-          Шаги за каждый день. <span style="color: var(--emerald);">Жёлтый</span> — выше цели 7000, <span style="color: var(--coral);">розовый</span> — ниже.
+          Шаги за каждый день. <span style="color: var(--emerald);">Зелёный</span> ≥ 7 000 · <span style="color: var(--amber);">жёлтый</span> 4 000–7 000 · <span style="color: var(--coral);">красный</span> &lt; 4 000.
         </div>
         <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="stepsChart"></svg></div>
+        <div class="chart-tooltip hint" id="stepsTooltip">Нажми на день, чтобы увидеть значение</div>
       </div>
 
       <div class="chart-card">
@@ -694,8 +725,9 @@
           <span class="chart-name">Калории</span>
           <span class="chart-meta" id="calMeta">…</span>
         </div>
-        <div class="chart-explain">Сколько съел каждый день. Пунктир — цель 2200 ккал.</div>
+        <div class="chart-explain">Сколько съел каждый день. Пунктир — цель 2200 ккал. Зелёный — близко к цели, жёлтый — отклонение 25 %, красный — больше.</div>
         <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 320 110" id="calChart"></svg><div id="calEmpty" style="display:none;" class="chart-empty">🍽 Записей нет<small>Расскажи боту что ел — появится график</small></div></div>
+        <div class="chart-tooltip hint" id="calTooltip">Нажми на день, чтобы увидеть значение</div>
       </div>
     </section>
 
@@ -791,6 +823,35 @@
       return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    // ==== Traffic-light classifiers ====
+    // Каждая функция возвращает один из: 'green' | 'yellow' | 'red' | null (нет данных)
+    function tlSteps(v)   { if (v == null) return null; return v >= 7000 ? 'green' : v >= 4000 ? 'yellow' : 'red'; }
+    function tlSleep(h)   { if (h == null) return null; return h >= 7    ? 'green' : h >= 5     ? 'yellow' : 'red'; }
+    function tlQuality(q) { if (q == null) return null; return q >= 80   ? 'green' : q >= 60    ? 'yellow' : 'red'; }
+    function tlHr(hr)     { if (hr == null) return null; return hr <= 60 ? 'green' : hr <= 70   ? 'yellow' : 'red'; }
+    function tlStress(s)  { if (s == null) return null; return s < 30    ? 'green' : s < 50     ? 'yellow' : 'red'; }
+    function tlKcal(eaten, goal) {
+      if (eaten == null || !goal) return null;
+      const pct = eaten / goal;
+      if (pct >= 0.9 && pct <= 1.1)  return 'green';
+      if (pct >= 0.75 && pct <= 1.25) return 'yellow';
+      return 'red';
+    }
+    // Цвет fill для SVG bar по светофорному классу
+    const TL_FILL = {
+      green:  'var(--emerald)',
+      yellow: 'var(--amber)',
+      red:    'var(--coral)',
+    };
+    function tlFill(cls) { return TL_FILL[cls] || 'rgba(255,255,255,0.2)'; }
+    // Применить класс value-X к элементу, очистив предыдущий
+    function applyTL(id, cls) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('value-green', 'value-yellow', 'value-red');
+      if (cls) el.classList.add('value-' + cls);
+    }
+
     // ==== Mock fallback ====
     const MOCK_DATA = {
       user: { name: tgUser?.first_name || 'Санёк' },
@@ -850,7 +911,10 @@
     // ==== Render ====
     function renderHero(data) {
       const t = data.today || {};
-      if (data.user?.name) document.getElementById('userName').textContent = data.user.name;
+      if (data.user?.name) {
+        // Берём только первое слово — «Санёк Александр» → «Санёк»
+        document.getElementById('userName').textContent = String(data.user.name).split(/\s+/)[0];
+      }
       if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
 
       const heroNum = document.getElementById('heroNum');
@@ -861,10 +925,12 @@
         const pct = Math.min(100, Math.round((t.steps / 7000) * 100));
         heroPct.innerHTML = `<b>${pct}%</b> от цели 7 000 шагов`;
         heroProgress.style.setProperty('--pct', pct + '%');
+        applyTL('heroNum', tlSteps(t.steps));
       } else {
         heroNum.textContent = '—';
         heroPct.innerHTML = '<span style="color:var(--fg-mute);">нет данных Garmin за сегодня</span>';
         heroProgress.style.setProperty('--pct', '0%');
+        applyTL('heroNum', null);
       }
 
       // Lede — три ветки: с Garmin, только калории, ничего
@@ -898,8 +964,14 @@
       };
 
       set('cardSleep', today.sleep_hours != null ? hm(today.sleep_hours) + '<small> / 8ч</small>' : null);
+      applyTL('cardSleep', tlSleep(today.sleep_hours));
+
       set('cardQuality', today.sleep_quality != null ? today.sleep_quality : null);
+      applyTL('cardQuality', tlQuality(today.sleep_quality));
+
       set('cardHr', today.resting_hr != null ? today.resting_hr : null);
+      applyTL('cardHr', tlHr(today.resting_hr));
+
       if (today.body_battery) {
         set('cardBb', `${today.body_battery[0]}<small> → </small>${today.body_battery[1]}`);
         const delta = today.body_battery[1] - today.body_battery[0];
@@ -908,7 +980,9 @@
       } else {
         set('cardBb', null);
       }
+
       set('cardStress', today.stress != null ? today.stress : null);
+      applyTL('cardStress', tlStress(today.stress));
 
       // Калории — отдельная карточка
       const kcal = today.calories;
@@ -917,9 +991,11 @@
           set('cardKcal', `${fmt(kcal.eaten)}<small> / ${kcal.goal} ккал</small>`);
           const sub = `Б ${kcal.protein}г · Ж ${kcal.fat}г · У ${kcal.carbs}г · ${kcal.meals_count} приём${kcal.meals_count===1?'':kcal.meals_count<5?'а':'ов'}`;
           document.getElementById('cardKcalSub').textContent = sub;
+          applyTL('cardKcal', tlKcal(kcal.eaten, kcal.goal));
         } else {
           set('cardKcal', '<small style="font-size:13px;color:var(--fg-mute);">записей нет</small>');
           document.getElementById('cardKcalSub').textContent = 'расскажи боту что ел';
+          applyTL('cardKcal', null);
         }
       }
     }
@@ -939,6 +1015,19 @@
       if (w.wind != null) cond.push(`ветер ${Math.round(w.wind)} м/с`);
       document.getElementById('weatherCond').textContent = cond.join(' · ') || '—';
       document.getElementById('weatherRec').textContent = w.recommendation || '';
+
+      // Время наблюдения от Open-Meteo (ISO МСК) → "обновлено HH:MM"
+      const tEl = document.getElementById('weatherTime');
+      if (w.observed_at) {
+        // Open-Meteo возвращает в нужной timezone, без 'Z'. Берём HH:MM напрямую.
+        const m = String(w.observed_at).match(/T(\d{2}:\d{2})/);
+        const dm = String(w.observed_at).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        const time = m ? m[1] : '';
+        const date = dm ? `${dm[3]}.${dm[2]}` : '';
+        tEl.textContent = (date && time) ? ` · обновлено ${date} ${time}` : (time ? ` · обновлено ${time}` : '');
+      } else {
+        tEl.textContent = '';
+      }
     }
 
     function renderGoals(goals) {
@@ -971,6 +1060,28 @@
     }
 
     // ==== Charts ====
+    // Привязка click/touchend к bar-rect — выводит значение дня в .chart-tooltip.
+    function attachBarHandlers(svgId, tooltipId, formatter) {
+      const svg = document.getElementById(svgId);
+      const tip = document.getElementById(tooltipId);
+      if (!svg || !tip) return;
+      svg.querySelectorAll('rect.bar-clickable').forEach(rect => {
+        const handler = (e) => {
+          e.preventDefault();
+          const day = rect.dataset.day;
+          const val = rect.dataset.value;
+          if (val === '' || val == null) {
+            tip.classList.remove('hint');
+            tip.innerHTML = `<b>${escapeHtml(day)}</b> · нет данных`;
+            return;
+          }
+          tip.classList.remove('hint');
+          tip.innerHTML = formatter(day, val);
+        };
+        rect.addEventListener('click', handler);
+      });
+    }
+
     function drawSleepChart(data, labels) {
       const svg = document.getElementById('sleepChart');
       const W = 320, H = 110, padL = 4, padR = 4, padT = 8, padB = 22;
@@ -984,20 +1095,19 @@
         const x = padL + i * gap + (gap - bw) / 2;
         const h = ((v - min) / (max - min)) * dh;
         const y = padT + dh - h;
-        const fill = v >= 7 ? 'var(--cyan)' : 'rgba(34, 211, 238, 0.4)';
-        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+        const fill = tlFill(tlSleep(v));
+        return `<rect class="bar-rect bar-clickable" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" data-day="${escapeHtml(labels[i])}" data-value="${v}" style="animation-delay: ${300 + i*70}ms"/>`;
       }).join('');
 
-      // Target line at 8h
       const ty = padT + dh - ((8 - min) / (max - min)) * dh;
       const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
-
       const xLabels = labels.map((l, i) => {
         const x = padL + i * gap + gap / 2;
         return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
       }).join('');
-
       svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+      attachBarHandlers('sleepChart', 'sleepTooltip',
+        (day, v) => `<b>${day}</b> · спал <b>${hm(parseFloat(v))}</b>`);
     }
 
     function drawStepsChart(data, labels) {
@@ -1013,59 +1123,61 @@
         const x = padL + i * gap + (gap - bw) / 2;
         const h = (v / max) * dh;
         const y = padT + dh - h;
-        const fill = v >= 7000 ? 'var(--amber)' : 'var(--coral)';
-        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+        const fill = tlFill(tlSteps(v));
+        return `<rect class="bar-rect bar-clickable" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" data-day="${escapeHtml(labels[i])}" data-value="${v}" style="animation-delay: ${300 + i*70}ms"/>`;
       }).join('');
 
-      // Target line at 7000
       const ty = padT + dh - (7000 / max) * dh;
       const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
-
       const xLabels = labels.map((l, i) => {
         const x = padL + i * gap + gap / 2;
         return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
       }).join('');
-
       svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+      attachBarHandlers('stepsChart', 'stepsTooltip',
+        (day, v) => `<b>${day}</b> · <b>${fmt(parseInt(v))}</b> шагов`);
     }
 
     function drawCaloriesChart(data, labels) {
       const svg = document.getElementById('calChart');
       const empty = document.getElementById('calEmpty');
+      const tipEl = document.getElementById('calTooltip');
       const realData = data.filter(v => v != null && v > 0);
       if (realData.length === 0) {
-        // Нет ни одной записи — показываем empty state
         if (empty) empty.style.display = '';
         if (svg) svg.style.display = 'none';
+        if (tipEl) tipEl.style.display = 'none';
         return;
       }
       if (empty) empty.style.display = 'none';
       if (svg) svg.style.display = '';
+      if (tipEl) tipEl.style.display = '';
 
       const W = 320, H = 110, padL = 4, padR = 4, padT = 8, padB = 22;
       const dw = W - padL - padR, dh = H - padT - padB;
       const max = Math.max(2400, ...realData);
       const bw = dw / data.length * 0.6;
       const gap = dw / data.length;
+      const goal = 2200;
 
       const bars = data.map((v, i) => {
         if (v == null) return '';
         const x = padL + i * gap + (gap - bw) / 2;
         const h = (v / max) * dh;
         const y = padT + dh - h;
-        const fill = v <= 2200 ? 'var(--amber)' : 'var(--coral)';
-        return `<rect class="bar-rect" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" style="animation-delay: ${300 + i*70}ms"/>`;
+        const fill = tlFill(tlKcal(v, goal));
+        return `<rect class="bar-rect bar-clickable" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" data-day="${escapeHtml(labels[i])}" data-value="${v}" style="animation-delay: ${300 + i*70}ms"/>`;
       }).join('');
 
-      const ty = padT + dh - (2200 / max) * dh;
+      const ty = padT + dh - (goal / max) * dh;
       const target = `<line class="chart-target" x1="${padL}" y1="${ty}" x2="${padL+dw}" y2="${ty}"/>`;
-
       const xLabels = labels.map((l, i) => {
         const x = padL + i * gap + gap / 2;
         return `<text x="${x}" y="${H - 4}" text-anchor="middle">${l}</text>`;
       }).join('');
-
       svg.innerHTML = `${target}${bars}<g class="chart-axis">${xLabels}</g>`;
+      attachBarHandlers('calChart', 'calTooltip',
+        (day, v) => `<b>${day}</b> · <b>${fmt(parseInt(v))}</b> ккал`);
     }
 
     function renderWeek(week) {
