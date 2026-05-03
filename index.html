@@ -539,6 +539,38 @@
       margin-bottom: 16px;
     }
 
+    /* ============ GARMIN OFFLINE BANNER ============ */
+    .garmin-banner {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(251, 113, 133, 0.12));
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      animation: fadeUp 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .garmin-banner-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+    .garmin-banner-text {
+      font-size: 13px;
+      color: var(--fg);
+      line-height: 1.4;
+    }
+    .garmin-banner-text b {
+      color: var(--amber);
+      font-weight: 700;
+    }
+    .garmin-banner-hint {
+      font-size: 11px;
+      color: var(--fg-dim);
+      margin-top: 2px;
+    }
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -560,6 +592,15 @@
       </h1>
       <p class="lede" id="lede">Загрузка данных…</p>
     </header>
+
+    <!-- ============ GARMIN STATUS BANNER (показывается только если outdated/missing) ============ -->
+    <div class="garmin-banner" id="garminBanner" style="display:none;">
+      <div class="garmin-banner-icon">⌚</div>
+      <div>
+        <div class="garmin-banner-text" id="garminBannerText">Garmin не синхронизирован</div>
+        <div class="garmin-banner-hint" id="garminBannerHint">Открой приложение Garmin Connect, чтобы данные за сегодня появились в дашборде</div>
+      </div>
+    </div>
 
     <!-- ============ WEATHER ============ -->
     <div class="weather-card" id="weatherCard">
@@ -756,6 +797,7 @@
       issue_n: dayN,
       today: {
         sleep_hours: 6.5, sleep_quality: 72, steps: 5234, resting_hr: 58, body_battery: [45,78], stress: 28,
+        garmin_status: "synced", garmin_last_date: null, days_since_sync: null,
         calories: { eaten: 1855, goal: 2200, protein: 152, fat: 53, carbs: 161, meals_count: 4 }
       },
       week: {
@@ -775,13 +817,42 @@
       weather: { t_min: 0, t_max: 5, t_now: 4, wcode: 85, condition: 'небольшой снегопад', precip_prob: 30, wind: 2, recommendation: 'Снегопад — тёплая обувь и варежки' }
     };
 
+    // ==== Garmin banner ====
+    function renderGarminBanner(today) {
+      const banner = document.getElementById('garminBanner');
+      const text = document.getElementById('garminBannerText');
+      const hint = document.getElementById('garminBannerHint');
+      const status = today?.garmin_status;
+      if (status === "synced" || !status) {
+        banner.style.display = 'none';
+        return;
+      }
+      banner.style.display = 'grid';
+      if (status === "missing") {
+        text.innerHTML = '<b>Garmin не подключён</b>';
+        hint.textContent = 'Подключи часы через /garmin connect — данные автоматически появятся';
+      } else {
+        // outdated
+        const days = today.days_since_sync;
+        const lastDate = today.garmin_last_date;
+        let daysWord = '';
+        if (days === 1) daysWord = '1 день';
+        else if (days >= 2 && days <= 4) daysWord = `${days} дня`;
+        else if (days != null) daysWord = `${days} дней`;
+        text.innerHTML = days != null
+          ? `Garmin не синхронизирован <b>${daysWord}</b>`
+          : '<b>Garmin не синхронизирован сегодня</b>';
+        const lastNice = lastDate ? lastDate.split('-').reverse().join('.') : '?';
+        hint.textContent = `Открой приложение Garmin Connect — последний sync ${lastNice}`;
+      }
+    }
+
     // ==== Render ====
     function renderHero(data) {
       const t = data.today || {};
       if (data.user?.name) document.getElementById('userName').textContent = data.user.name;
       if (data.issue_n) document.getElementById('issueN').textContent = String(data.issue_n).padStart(3,'0');
 
-      // Hero — шаги
       const heroNum = document.getElementById('heroNum');
       const heroPct = document.getElementById('heroPct');
       const heroProgress = document.getElementById('heroProgress');
@@ -792,9 +863,11 @@
         heroProgress.style.setProperty('--pct', pct + '%');
       } else {
         heroNum.textContent = '—';
+        heroPct.innerHTML = '<span style="color:var(--fg-mute);">нет данных Garmin за сегодня</span>';
+        heroProgress.style.setProperty('--pct', '0%');
       }
 
-      // Lede dynamic
+      // Lede — три ветки: с Garmin, только калории, ничего
       const lede = document.getElementById('lede');
       const parts = [];
       if (t.sleep_hours != null) {
@@ -807,7 +880,14 @@
         if (remaining > 0) parts.push(`До цели в шагах осталось ${fmt(remaining)}.`);
         else parts.push(`Цель по шагам уже закрыта.`);
       }
-      lede.innerHTML = parts.length ? parts.join(' ') : 'Загрузка данных Garmin…';
+      if (parts.length) {
+        lede.innerHTML = parts.join(' ');
+      } else if (t.calories?.eaten > 0) {
+        // Garmin offline, но meals есть
+        lede.innerHTML = `Garmin offline. По дневнику съедено <em>${fmt(t.calories.eaten)} ккал</em> за ${t.calories.meals_count} приём${t.calories.meals_count===1?'':t.calories.meals_count<5?'а':'ов'}.`;
+      } else {
+        lede.innerHTML = 'Garmin не синхронизирован, дневник пустой. Расскажи боту что ел.';
+      }
     }
 
     function renderStats(today) {
@@ -1020,6 +1100,7 @@
     }
 
     function renderAll(data) {
+      renderGarminBanner(data.today);
       renderHero(data);
       renderStats(data.today);
       renderWeather(data.weather);
