@@ -581,6 +581,14 @@
       align-items: center;
       animation: fadeUp 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
+    /* Сильнее красный когда Garmin прямо сейчас застрял (>1 ч без новых данных) */
+    .garmin-banner.garmin-banner-stale {
+      background: linear-gradient(135deg, rgba(251, 113, 133, 0.25), rgba(251, 113, 133, 0.12));
+      border-color: rgba(251, 113, 133, 0.6);
+    }
+    .garmin-banner.garmin-banner-stale .garmin-banner-text b {
+      color: var(--coral);
+    }
     .garmin-banner-icon {
       font-size: 22px;
       line-height: 1;
@@ -659,7 +667,10 @@
 
     <!-- ============ TODAY STATS GRID ============ -->
     <section class="section delayed-2">
-      <div class="section-title">📊 Показатели дня</div>
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+        <span>📊 Показатели дня</span>
+        <span id="garminFreshness" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--fg-mute);text-transform:none;font-weight:500;"></span>
+      </div>
       <div class="stat-grid">
         <div class="stat-card sleep">
           <div class="stat-card-head"><span class="stat-card-icon">😴</span><span class="stat-card-name">Сон</span></div>
@@ -879,21 +890,28 @@
     };
 
     // ==== Garmin banner ====
+    // Показывает 3 случая:
+    //   1) status='missing' — Garmin не подключён (всегда)
+    //   2) status='outdated' — последний sync был в другой день (всегда)
+    //   3) status='synced' но freshness.is_stale=true — данные за сегодня есть,
+    //      но последняя точка >1 час назад (часы не синкаются прямо сейчас)
     function renderGarminBanner(today) {
       const banner = document.getElementById('garminBanner');
       const text = document.getElementById('garminBannerText');
       const hint = document.getElementById('garminBannerHint');
       const status = today?.garmin_status;
-      if (status === "synced" || !status) {
-        banner.style.display = 'none';
-        return;
-      }
-      banner.style.display = 'grid';
+      const fresh = today?.garmin_freshness;
+
       if (status === "missing") {
+        banner.style.display = 'grid';
+        banner.classList.remove('garmin-banner-stale');
         text.innerHTML = '<b>Garmin не подключён</b>';
         hint.textContent = 'Подключи часы через /garmin connect — данные автоматически появятся';
-      } else {
-        // outdated
+        return;
+      }
+      if (status === "outdated") {
+        banner.style.display = 'grid';
+        banner.classList.remove('garmin-banner-stale');
         const days = today.days_since_sync;
         const lastDate = today.garmin_last_date;
         let daysWord = '';
@@ -905,7 +923,20 @@
           : '<b>Garmin не синхронизирован сегодня</b>';
         const lastNice = lastDate ? lastDate.split('-').reverse().join('.') : '?';
         hint.textContent = `Открой приложение Garmin Connect — последний sync ${lastNice}`;
+        return;
       }
+      // status === 'synced' — проверяем свежесть последней точки
+      if (fresh && fresh.is_stale) {
+        banner.style.display = 'grid';
+        banner.classList.add('garmin-banner-stale');
+        const ageMin = Math.floor((fresh.age_seconds || 0) / 60);
+        const ageStr = ageMin >= 60 ? `${Math.floor(ageMin / 60)} ч ${ageMin % 60} мин назад` : `${ageMin} мин назад`;
+        text.innerHTML = `⚠️ <b>Garmin не синхронизировался — данные устарели</b>`;
+        hint.textContent = `Последняя точка в ${fresh.last_data_hm_msk || '?'} (${ageStr}). Открой Garmin Connect для синхронизации.`;
+        return;
+      }
+      banner.style.display = 'none';
+      banner.classList.remove('garmin-banner-stale');
     }
 
     // ==== Render ====
@@ -956,8 +987,27 @@
       }
     }
 
+    // Subtitle «Garmin: обновлено HH:MM (N мин назад)» под section title.
+    // Красный если is_stale (>1 час).
+    function renderGarminFreshness(today) {
+      const el = document.getElementById('garminFreshness');
+      if (!el) return;
+      const fresh = today?.garmin_freshness;
+      if (!fresh || !fresh.last_data_hm_msk) {
+        el.textContent = '';
+        return;
+      }
+      const age = fresh.age_seconds || 0;
+      const min = Math.floor(age / 60);
+      const ageStr = min >= 60 ? `${Math.floor(min/60)}ч ${min%60}м` : `${min}м`;
+      el.textContent = `Garmin: ${fresh.last_data_hm_msk} · ${ageStr} назад`;
+      el.style.color = fresh.is_stale ? 'var(--coral)' : 'var(--fg-mute)';
+      el.style.fontWeight = fresh.is_stale ? '700' : '500';
+    }
+
     function renderStats(today) {
       today = today || {};
+      renderGarminFreshness(today);
       const set = (id, html, fallback = '—') => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = html != null && html !== '' ? html : fallback;
@@ -972,7 +1022,15 @@
       set('cardHr', today.resting_hr != null ? today.resting_hr : null);
       applyTL('cardHr', tlHr(today.resting_hr));
 
-      if (today.body_battery) {
+      if (today.body_battery && typeof today.body_battery === 'object' && today.body_battery.current != null) {
+        // API теперь отдаёт {current, min, max, charged, drained} (после fix 2026-05-04).
+        // current = текущий уровень 0-100; charged = +прирост за день; drained = -расход.
+        const bb = today.body_battery;
+        set('cardBb', `${bb.current}<small> /100</small>`);
+        const sub = `мин ${bb.min} · макс ${bb.max} · ⚡+${bb.charged ?? '?'} / 🔻${bb.drained ?? '?'}`;
+        document.getElementById('cardBbSub').textContent = sub;
+      } else if (Array.isArray(today.body_battery) && today.body_battery.length === 2) {
+        // Backward-compat для старого API формата [min, max]
         set('cardBb', `${today.body_battery[0]}<small> → </small>${today.body_battery[1]}`);
         const delta = today.body_battery[1] - today.body_battery[0];
         const sub = delta > 0 ? `+${delta} за день` : (delta < 0 ? `${delta} за день` : 'без изменений');
